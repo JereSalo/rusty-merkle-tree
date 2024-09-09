@@ -1,6 +1,6 @@
 use std::vec;
 use hex;
-use sha2::{Sha256, Digest};
+use sha2::{digest::block_buffer::Error, Digest, Sha256};
 
 /// A Hash is a String, just to differentiate it from a normal element String.
 type Hash = String;
@@ -72,19 +72,61 @@ impl MerkleTree{
         todo!();
     }
 
-    pub fn gen_proof(&self, hash: Hash) -> Vec<String>{
-        todo!();
+    pub fn gen_proof(&self, hash: Hash) -> Option<Vec<Hash>> {
+        let mut proof: Vec<Hash> = vec![];
+
+        // starting from 0
+        // floor(n/2) - 1 if floor(n/2) odd
+        // floor(n/2) + 1 if floor(n/2) even
+        // first get the opposite element
+
+        // 1. Find hash index
+        let mut i: Option<usize> = None;
+        for (index, element) in self.tree[0].iter().enumerate() {
+            if *element == hash {
+                i = Some(index);
+                break;
+            }
+        }
+
+        let i = i?;
+
+        // 2. Push it's partner in the same level
+
+        // If even, the partner is i + 1; if odd, the partner is i - 1
+        let i_partner = if i % 2 == 0 {
+            i + 1
+        }
+        else{
+            i - 1
+        };
+
+        proof.push(self.tree[0][i_partner].clone());
+
+        // 3. Now push the elements, scaling on every level
+        let mut n = i;
+        let mut level = 1;
+        while level < self.tree.len() - 1 {
+            let idx;
+            if (n/2) % 2 == 0 {
+                idx = n/2 + 1;
+            }
+            else{
+                idx = n/2 - 1;
+            }
+            proof.push(self.tree[level][idx].clone());
+            level += 1;
+        }
+
+        Some(proof)
     }
 
     // even_elem = !even_elem;
     pub fn add_element(&mut self, element: String){
-        // if even, add to the end both times (cause we need it to be even)
-        // if odd, pop last element and add the new one.
-
         let second_to_last = self.tree[0].get(self.tree[0].len()-2).unwrap();
         let last = self.tree[0].last().unwrap();
         if last == second_to_last {
-            // replace last
+            // replace last, they are equal because qty of elements was uneven in the first place.
             self.tree[0].pop();
         }
 
