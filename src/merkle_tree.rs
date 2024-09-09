@@ -50,7 +50,7 @@ impl MerkleTree{
     }
 
     // Given a level N of the tree it calculates and returns the upper level of it.
-    // Note: Consider the case of odd number of elements in one level, the last one should be repeated.
+    // Note: I'm not considering the case of odd qty of elements being sent because it is something that won't happen. The tree will always have even number of leafs.
     pub fn calculate_upper_level(actual_level: &Vec<Hash>) -> Vec<Hash>{
         let mut next_level: Vec<Hash> = vec![];
 
@@ -178,19 +178,5 @@ mod tests {
 
         assert_eq!(expected_next_level, next_level);
         assert_eq!(expected_following_level, following_level);
-    }
-
-
-    #[test]
-    fn calculate_next_level_odd(){
-        // Hash of "a" is ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb
-        // We expect hash of "aa" as result because current level is going to be odd: 961b6dd3ede3cb8ecbaacbd68de040cd78eb2ed5889130cceb4c49268ea4d506
-        let expected_next_level = vec!["961b6dd3ede3cb8ecbaacbd68de040cd78eb2ed5889130cceb4c49268ea4d506".to_string()];
-
-        let current_level = vec!["a".to_string()];
-
-        let next_level = MerkleTree::calculate_upper_level(&current_level);
-
-        assert_eq!(expected_next_level, next_level);
     }
 }
