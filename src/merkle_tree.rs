@@ -1,10 +1,6 @@
-
 use std::vec;
-
 use hex;
 use sha2::{Sha256, Digest};
-
-use crate::merkle_tree;
 
 /// A Hash is a String, just to differentiate it from a normal element String.
 type Hash = String;
@@ -12,26 +8,46 @@ type Hash = String;
 #[derive(Debug)]
 pub struct MerkleTree{
     tree: Vec<Vec<String>>,
+    even_elem: bool,
 }
 
 impl MerkleTree{
     // Considerations for implementing the most basic thing:
-    //  Not going to hash elements, will assume elements are pow of 2
+    //  Not going to hash elements, assuming n of elements are even
     pub fn build(elements: Vec<String>) -> Self{
+        // New empty Merkle Tree
         let mut merkle_tree = MerkleTree::new();
-        // tree elements.clone();
-        merkle_tree.tree.push(elements.clone());
 
-        // While merkle root is not reached (length 1)
-        let upper_level = MerkleTree::calculate_upper_level(&elements);
-        merkle_tree.tree.push(upper_level);
-
+        // Add elements to it, but clone the last one if qty of elements is odd.
+        merkle_tree.even_elem = elements.len() % 2 == 0;
+        let mut elements_to_push = elements.clone();
         
-        todo!();
+        if !merkle_tree.even_elem{
+            let last = elements.last().expect("Empty list").clone();
+            elements_to_push.push(last);
+        }
+        
+        merkle_tree.tree.push(elements_to_push.clone());
+        
+        // While merkle root is not reached (length 1)
+        while elements_to_push.len() > 1{
+            elements_to_push = MerkleTree::calculate_upper_level(&elements_to_push);
+
+            if elements_to_push.len() > 1{
+                let is_even = elements_to_push.len() % 2 == 0;
+                if !is_even { 
+                    elements_to_push.push(elements_to_push.last().unwrap().clone());
+                }
+            }
+            
+            merkle_tree.tree.push(elements_to_push.clone());
+        }
+        
+        merkle_tree
     }
 
     pub fn new() -> MerkleTree{
-        MerkleTree { tree: vec![vec![]]}
+        MerkleTree { tree: vec![], even_elem: true}
     }
 
     // Given a level N of the tree it calculates and returns the upper level of it.
@@ -41,7 +57,8 @@ impl MerkleTree{
 
         // Iterate list and calculate hashes
         for (i, s_left) in actual_level.iter().enumerate().step_by(2){
-            let s_right = actual_level.get(i + 1).unwrap_or(&s_left);
+            // Considering even!
+            let s_right = &actual_level[i+1];
 
             let combined_hashes = format!("{}{}", s_left, s_right);
 
