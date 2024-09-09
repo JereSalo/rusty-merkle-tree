@@ -7,23 +7,22 @@ type Hash = String;
 
 #[derive(Debug)]
 pub struct MerkleTree{
-    tree: Vec<Vec<String>>,
-    even_elem: bool,
+    tree: Vec<Vec<String>>
 }
 
 impl MerkleTree{
     // Considerations for implementing the most basic thing:
     //  Not going to hash elements, assuming n of elements are even
     pub fn build(elements: Vec<String>) -> Self{
-        // New empty Merkle Tree
+        // 1. New merkle tree
         let mut merkle_tree = MerkleTree::new();
 
-        // Add elements to it, but clone the last one if qty of elements is odd.
-        merkle_tree.even_elem = elements.len() % 2 == 0;
+        // 2. Push elements into tree
+
         let mut elements_to_push = elements.clone();
-        
-        if !merkle_tree.even_elem{
-            let last = elements.last().expect("Empty list").clone();
+        // clone the last one if qty of elements is odd
+        if elements.len() % 2 != 0 {
+            let last = elements_to_push.last().expect("Empty list").clone();
             elements_to_push.push(last);
         }
         
@@ -42,12 +41,12 @@ impl MerkleTree{
             
             merkle_tree.tree.push(elements_to_push.clone());
         }
-        
+
         merkle_tree
     }
 
     pub fn new() -> MerkleTree{
-        MerkleTree { tree: vec![], even_elem: true}
+        MerkleTree { tree: vec![] }
     }
 
     // Given a level N of the tree it calculates and returns the upper level of it.
@@ -77,8 +76,22 @@ impl MerkleTree{
         todo!();
     }
 
+    // even_elem = !even_elem;
     pub fn add_element(&mut self, element: String){
-        todo!();
+        // if even, add to the end both times (cause we need it to be even)
+        // if odd, pop last element and add the new one.
+
+        let second_to_last = self.tree[0].get(self.tree[0].len()-2).unwrap();
+        let last = self.tree[0].last().unwrap();
+        if last == second_to_last {
+            // replace last
+            self.tree[0].pop();
+        }
+
+        self.tree[0].push(element);
+
+        
+        *self = MerkleTree::build(self.tree[0].clone());
     }
 
     pub fn hash(element: String) -> Hash{
