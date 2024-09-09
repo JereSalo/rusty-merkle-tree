@@ -81,10 +81,26 @@ mod tests {
     #[test]
     fn calculate_hash(){
         // SHA256 of "a" is ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb
+        let expected_hash = "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb".to_string();
+
         let str_test = String::from("a");
-        let hard_hash = "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb".to_string();
         let calc_hash = MerkleTree::hash(str_test);
 
-        assert_eq!(hard_hash, calc_hash);
+        assert_eq!(expected_hash, calc_hash);
+    }
+
+    // This one is with a trivial example
+    #[test]
+    fn calculate_next_level(){
+        // Hash of "ab" is fb8e20fc2e4c3f248c60c39bd652f3c1347298bb977b8b4d5903b85055620603
+        // Hash of "cd" is 21e721c35a5823fdb452fa2f9f0a612c74fb952e06927489c6b27a43b817bed4
+        let expected_next_level = vec!["fb8e20fc2e4c3f248c60c39bd652f3c1347298bb977b8b4d5903b85055620603".to_string(), "21e721c35a5823fdb452fa2f9f0a612c74fb952e06927489c6b27a43b817bed4".to_string()];
+
+
+        let current_level = vec!["a".to_string(), "b".to_string(), "c".to_string(), "d".to_string()];
+
+        let next_level = MerkleTree::calculate_upper_level(current_level);
+
+        assert_eq!(expected_next_level, next_level);
     }
 }
