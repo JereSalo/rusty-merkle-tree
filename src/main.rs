@@ -10,7 +10,7 @@ fn main() {
 
     println!("{:?}",test_level);
 
-    let next_level = MerkleTree::calculate_upper_level(test_level);
+    let next_level = MerkleTree::calculate_upper_level(&test_level);
 
     println!("{:?}",next_level);
 }
