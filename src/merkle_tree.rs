@@ -1,6 +1,6 @@
 
-use hex_literal::hex;
-use sha2::{Sha256, Sha512, Digest};
+use hex;
+use sha2::{Sha256, Digest};
 
 /// A Hash is a String, just to differentiate it from a normal element String.
 type Hash = String;
@@ -11,16 +11,14 @@ pub struct MerkleTree{
 }
 
 impl MerkleTree{
-    // elements should be hashed
+    // Considerations for implementing the most basic thing:
+    //  Not going to hash elements, will assume elements are pow of 2
     pub fn build(elements: Vec<String>) -> Self{
-        // 1. hash elements
-        // 2. add hashes as leafs of the tree
-        // 3. calculate upper level based on lower level iteratively (using other function)
-        //      until the current level is of size 1 (Merkle Root). It adds levels to MerkleTree
-
+        
+        
         todo!();
-        MerkleTree { tree: vec![elements] }
     }
+
 
     // Given a level N of the tree it calculates and returns the upper level of it.
     // Note: Consider the case of odd number of elements in one level, the last one should be repeated.
@@ -41,6 +39,9 @@ impl MerkleTree{
     }
 
     fn hash(element: String) -> Hash{
-        todo!();
+        let mut hasher = Sha256::new();
+        hasher.update(element);
+        let result = hasher.finalize();
+        hex::encode(result)
     }
 }
