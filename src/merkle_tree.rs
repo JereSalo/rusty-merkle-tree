@@ -13,15 +13,20 @@ pub struct MerkleTree{
 impl MerkleTree{
     // Considerations for implementing the most basic thing:
     //  Not going to hash elements
-    pub fn build(elements: Vec<String>) -> Self{
+    pub fn build(elements: Vec<String>) -> Option<Self>{
         // 1. New merkle tree
         let mut merkle_tree = MerkleTree::new();
 
-        // 2. Push elements into tree
-        let mut elements_to_push = elements.clone();
+        // 2. Hash elements and push them into tree
+        let mut elements_to_push = vec![];
+        for element in elements{
+            let hash = Self::hash(&element);
+            elements_to_push.push(hash);
+        }
+
         // clone the last one if qty of elements is odd
-        if elements.len() % 2 != 0 {
-            let last = elements_to_push.last().expect("Empty list").clone();
+        if elements_to_push.len() % 2 != 0 {
+            let last = elements_to_push.last()?.clone();
             elements_to_push.push(last);
         }
         
@@ -29,19 +34,18 @@ impl MerkleTree{
         
         // While merkle root is not reached (length 1)
         while elements_to_push.len() > 1{
-            elements_to_push = MerkleTree::calculate_upper_level(&elements_to_push);
+            elements_to_push = Self::calculate_upper_level(&elements_to_push);
 
-            if elements_to_push.len() > 1{
-                let is_even = elements_to_push.len() % 2 == 0;
-                if !is_even { 
-                    elements_to_push.push(elements_to_push.last().unwrap().clone());
-                }
+            // If qty of elements in a non-root node is uneven clone the last one.
+            if elements_to_push.len() % 2 != 0 && elements_to_push.len() > 1 { 
+                let last = elements_to_push.last()?.clone();
+                elements_to_push.push(last);
             }
             
             merkle_tree.tree.push(elements_to_push.clone());
         }
 
-        merkle_tree
+        Some(merkle_tree)
     }
 
     pub fn new() -> MerkleTree{
@@ -108,8 +112,10 @@ impl MerkleTree{
         
         self.tree[0].push(element);
         
-        
-        *self = MerkleTree::build(self.tree[0].clone());
+        match MerkleTree::build(self.tree[0].clone()){
+            Some(tree) => {*self = tree},
+            None => {println!("There has been an error in building a tree")}
+        };
     }
 
     // Given a level N of the tree it calculates and returns the upper level of it.

@@ -9,7 +9,7 @@ fn main() {
     let d = "d".to_string();
 
     let elements = vec![a, b,c,d];
-    let mut mktree = MerkleTree::build(elements);
+    let mut mktree = MerkleTree::build(elements).unwrap();
 
     let proof = mktree.gen_proof("a".to_string());
 
