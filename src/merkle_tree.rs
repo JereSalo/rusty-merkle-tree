@@ -219,20 +219,25 @@ mod tests {
     #[test]
     fn build_tree(){
         // Im just going to check if the root of this tree is the expected, if that's right then it is well built.
-        let a = "a".to_string();
-        let b = "b".to_string();
-        let c = "c".to_string();
-        let d = "d".to_string();
-        let elements = vec![a, b, c, d];
-
-
-        let mut mktree = MerkleTree::build(elements).unwrap();
+        let mktree = build_basic_tree();
 
 
         let merkle_root = mktree.get_root().unwrap();
         let expected_root = "58c89d709329eb37285837b042ab6ff72c7c8f74de0446b091b6a0131c102cfd";
 
         assert_eq!(merkle_root,expected_root);
+    }
+
+    #[test]
+    fn make_proof(){
+        let mktree = build_basic_tree();
+
+        let hash = "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6".to_string();
+        let proof = [ProofElement { hash: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4".to_string(), left: false }, ProofElement { hash: "62af5c3cb8da3e4f25061e829ebeea5c7513c54949115b1acc225930a90154da".to_string(), left: true }].to_vec();
+
+        let generated_proof = mktree.gen_proof(hash).unwrap();
+
+        assert_eq!(proof, generated_proof);
     }
 
     #[test]
@@ -258,7 +263,7 @@ mod tests {
         // WRONG PROOF FOR THIS ELEMENT
         let proof = [ProofElement { hash: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4".to_string(), left: false }, ProofElement { hash: "62af5c3cb8da3e4f25061JEREebeea5c7513c54949115b1acc225930a90154da".to_string(), left: true }].to_vec();
 
-        
+
         let validation = mktree.verify(hash, proof).unwrap();
 
         assert!(!validation);

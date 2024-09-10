@@ -1,5 +1,5 @@
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ProofElement{
     pub hash: String,
     pub left: bool,
