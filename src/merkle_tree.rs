@@ -11,22 +11,20 @@ pub struct MerkleTree{
 
 impl MerkleTree{
     /// Builds merkle tree from elements list, hashing them first.
-    pub fn build(elements: Vec<String>) -> Result<Self, MerkleError>{
+    pub fn build(elements: Vec<String>) -> Result<Self, MerkleError> {
+        let hashed_elements: Vec<String> = elements.iter().map(|e| Self::hash(&e)).collect();
+
+        Self::build_without_hashing(hashed_elements)
+    }
+
+    pub fn build_without_hashing(hashes: Vec<String>) -> Result<Self, MerkleError>{
         // 1. New merkle tree
-        let mut merkle_tree = MerkleTree::new();
+        let mut merkle_tree = MerkleTree { tree: vec![] };
 
-        // 2. Hash elements and push them into tree
-        let mut elements_to_push = vec![];
-        for element in elements{
-            let hash = Self::hash(&element);
-            elements_to_push.push(hash);
-        }
+        // 2. Push leaf nodes to the tree
+        let mut elements_to_push = hashes;
 
-        // clone the last one if qty of elements is odd
-        if elements_to_push.len() % 2 != 0 {
-            let last = elements_to_push.last().ok_or(MerkleError::EmptyList)?.clone();
-            elements_to_push.push(last);
-        }
+        Self::duplicate_last_if_odd(&mut elements_to_push)?;
         
         merkle_tree.tree.push(elements_to_push.clone());
         
@@ -34,10 +32,9 @@ impl MerkleTree{
         while elements_to_push.len() > 1 {
             elements_to_push = Self::calculate_upper_level(&elements_to_push);
 
-            // If qty of elements in a non-root node is uneven clone the last one.
-            if elements_to_push.len() % 2 != 0 && elements_to_push.len() > 1 { 
-                let last = elements_to_push.last().ok_or(MerkleError::EmptyList)?.clone();
-                elements_to_push.push(last);
+            // This "if" is because the only odd tree level accepted is the root!
+            if elements_to_push.len() > 1 { 
+                Self::duplicate_last_if_odd(&mut elements_to_push)?;
             }
             
             merkle_tree.tree.push(elements_to_push.clone());
@@ -46,39 +43,17 @@ impl MerkleTree{
         Ok(merkle_tree)
     }
 
-    pub fn build_without_hashing(elements: Vec<String>) -> Result<Self, MerkleError>{
-        // 1. New merkle tree
-        let mut merkle_tree = MerkleTree::new();
-
-        // 2. Hash elements and push them into tree
-        let mut elements_to_push = elements.clone();
-
-        // clone the last one if qty of elements is odd
-        if elements_to_push.len() % 2 != 0 {
-            let last = elements_to_push.last().ok_or(MerkleError::EmptyList)?.clone();
-            elements_to_push.push(last);
-        }
-        
-        merkle_tree.tree.push(elements_to_push.clone());
-        
-        // 3. Calculate upper levels and push them to the tree until root is reached.
-        while elements_to_push.len() > 1 {
-            elements_to_push = Self::calculate_upper_level(&elements_to_push);
-
-            // If qty of elements in a non-root node is uneven clone the last one.
-            if elements_to_push.len() % 2 != 0 && elements_to_push.len() > 1 { 
-                let last = elements_to_push.last().ok_or(MerkleError::EmptyList)?.clone();
-                elements_to_push.push(last);
-            }
-            
-            merkle_tree.tree.push(elements_to_push.clone());
-        }
-
-        Ok(merkle_tree)
+    pub fn new_empty() -> MerkleTree{
+        MerkleTree { tree: vec![vec![]] }
     }
 
-    pub fn new() -> MerkleTree{
-        MerkleTree { tree: vec![] }
+    /// Duplicates last element if level of tree is odd, so that it becomes even.
+    fn duplicate_last_if_odd(elements: &mut Vec<String>) -> Result<(), MerkleError> {
+        if elements.len() % 2 != 0 {
+            let last = elements.last().ok_or(MerkleError::EmptyList)?.clone();
+            elements.push(last);
+        }
+        Ok(())
     }
 
     
