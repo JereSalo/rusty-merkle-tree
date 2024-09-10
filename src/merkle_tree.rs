@@ -4,9 +4,6 @@ use sha2::{Digest, Sha256};
 use crate::merkle_error::MerkleError;
 use crate::merkle_proof::ProofElement;
 
-/// A Hash is a String, just to differentiate it from a normal element String.
-type Hash = String;
-
 #[derive(Debug, PartialEq)]
 pub struct MerkleTree{
     tree: Vec<Vec<String>>
@@ -49,7 +46,7 @@ impl MerkleTree{
         Ok(merkle_tree)
     }
 
-    pub fn build_without_hashing(elements: Vec<Hash>) -> Result<Self, MerkleError>{
+    pub fn build_without_hashing(elements: Vec<String>) -> Result<Self, MerkleError>{
         // 1. New merkle tree
         let mut merkle_tree = MerkleTree::new();
 
@@ -85,7 +82,7 @@ impl MerkleTree{
     }
 
     
-    pub fn verify(&self, hash: Hash, proof: Vec<ProofElement>) -> Result<bool, MerkleError>{
+    pub fn verify(&self, hash: String, proof: Vec<ProofElement>) -> Result<bool, MerkleError>{
         // Calculates root with element hash (leaf node) and it's proof
         let calc_root = proof.iter().fold(hash, |cur_hash, partner| { 
             let combined_hashes = if partner.left {
@@ -102,7 +99,7 @@ impl MerkleTree{
         Ok(calc_root == *real_root)
     }
     
-    pub fn gen_proof(&self, hash: Hash) -> Result<Vec<ProofElement>, MerkleError> {
+    pub fn gen_proof(&self, hash: String) -> Result<Vec<ProofElement>, MerkleError> {
         let mut proof: Vec<ProofElement> = vec![];
         
         // 1. Find hash index
@@ -172,8 +169,8 @@ impl MerkleTree{
 
     // Given a level N of the tree it calculates and returns the upper level of it.
     // Note: I'm not considering the case of odd qty of elements being sent because it is something that won't happen. The tree will always have e2ven number of nodes on each sub-root level.
-    fn calculate_upper_level(actual_level: &Vec<Hash>) -> Vec<Hash>{
-        let mut next_level: Vec<Hash> = vec![];
+    fn calculate_upper_level(actual_level: &Vec<String>) -> Vec<String>{
+        let mut next_level: Vec<String> = vec![];
 
         // Iterate list and calculate hashes
         for (i, s_left) in actual_level.iter().enumerate().step_by(2){
@@ -188,7 +185,7 @@ impl MerkleTree{
         next_level
     }
 
-    fn hash(element: &str) -> Hash{
+    fn hash(element: &str) -> String{
         let mut hasher = Sha256::new();
         hasher.update(element);
         let result = hasher.finalize();

@@ -11,5 +11,4 @@ impl ProofElement{
         
         ProofElement{hash, left}
     }
-
 }
