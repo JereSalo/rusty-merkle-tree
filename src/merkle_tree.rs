@@ -276,15 +276,16 @@ mod tests {
     }
 
     #[test]
-    fn add_element(){
+    fn add_element() -> Result<(), MerkleError>{
         let expected_tree = build_basic_tree();
         let mut mktree = MerkleTree {tree: vec![vec![]]};
 
-        let _ = mktree.add_element("a".to_string());
-        let _ = mktree.add_element("b".to_string());
-        let _ = mktree.add_element("c".to_string());
-        let _ = mktree.add_element("d".to_string());
+        mktree.add_element("a".to_string())?;
+        mktree.add_element("b".to_string())?;
+        mktree.add_element("c".to_string())?;
+        mktree.add_element("d".to_string())?;
 
         assert_eq!(mktree, expected_tree);
+        Ok(())
     }
 }
