@@ -66,7 +66,7 @@ impl MerkleTree{
             MerkleTree::hash(&combined_hashes)
         });
 
-        let real_root = self.tree.last().ok_or(MerkleError::EmptyList)?.get(0).ok_or(MerkleError::EmptyList)?;
+        let real_root = self.get_root()?;
 
         Ok(calc_root == *real_root)
     }
@@ -163,6 +163,11 @@ impl MerkleTree{
         let result = hasher.finalize();
         hex::encode(result)
     }
+
+    fn get_root(&self) -> Result<&String, MerkleError>{
+        let root = self.tree.last().ok_or(MerkleError::EmptyList)?.get(0).ok_or(MerkleError::EmptyList)?;
+        Ok(root)
+    }
 }
 
 
@@ -199,5 +204,24 @@ mod tests {
 
         assert_eq!(expected_next_level, next_level);
         assert_eq!(expected_following_level, following_level);
+    }
+
+    #[test]
+    fn build_tree(){
+        // Im just going to check if the root of this tree is the expected, if that's right then it is well built.
+        let a = "a".to_string();
+        let b = "b".to_string();
+        let c = "c".to_string();
+        let d = "d".to_string();
+        let elements = vec![a, b, c, d];
+
+
+        let mut mktree = MerkleTree::build(elements).unwrap();
+
+
+        let merkle_root = mktree.get_root().unwrap();
+        let expected_root = "58c89d709329eb37285837b042ab6ff72c7c8f74de0446b091b6a0131c102cfd";
+
+        assert_eq!(merkle_root,expected_root);
     }
 }
