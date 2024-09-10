@@ -1,6 +1,7 @@
-use std::vec;
+use std::{error, vec};
 use hex;
 use sha2::{Digest, Sha256};
+use crate::merkle_error::MerkleError;
 
 /// A Hash is a String, just to differentiate it from a normal element String.
 type Hash = String;
@@ -11,9 +12,8 @@ pub struct MerkleTree{
 }
 
 impl MerkleTree{
-    // Considerations for implementing the most basic thing:
-    //  Not going to hash elements
-    pub fn build(elements: Vec<String>) -> Option<Self>{
+    /// Builds merkle tree from elements list, hashing them first.
+    pub fn build(elements: Vec<String>) -> Result<Self, MerkleError>{
         // 1. New merkle tree
         let mut merkle_tree = MerkleTree::new();
 
@@ -26,26 +26,26 @@ impl MerkleTree{
 
         // clone the last one if qty of elements is odd
         if elements_to_push.len() % 2 != 0 {
-            let last = elements_to_push.last()?.clone();
+            let last = elements_to_push.last().ok_or(MerkleError::EmptyList)?.clone();
             elements_to_push.push(last);
         }
         
         merkle_tree.tree.push(elements_to_push.clone());
         
-        // While merkle root is not reached (length 1)
+        // 3. Calculate upper levels and push them to the tree until root is reached.
         while elements_to_push.len() > 1{
             elements_to_push = Self::calculate_upper_level(&elements_to_push);
 
             // If qty of elements in a non-root node is uneven clone the last one.
             if elements_to_push.len() % 2 != 0 && elements_to_push.len() > 1 { 
-                let last = elements_to_push.last()?.clone();
+                let last = elements_to_push.last().ok_or(MerkleError::EmptyList)?.clone();
                 elements_to_push.push(last);
             }
             
             merkle_tree.tree.push(elements_to_push.clone());
         }
 
-        Some(merkle_tree)
+        Ok(merkle_tree)
     }
 
     pub fn new() -> MerkleTree{
@@ -54,10 +54,11 @@ impl MerkleTree{
 
     
     pub fn verify(&self, hash: Hash, proof: Vec<Hash>) -> bool{
+        // Iterate proof and hash. Maybe a fold with seed hash
         todo!();
     }
     
-    pub fn gen_proof(&self, hash: Hash) -> Option<Vec<Hash>> {
+    pub fn gen_proof(&self, hash: Hash) -> Result<Vec<Hash>, MerkleError> {
         let mut proof: Vec<Hash> = vec![];
         
         // 1. Find hash index
@@ -69,11 +70,11 @@ impl MerkleTree{
             }
         }
         
-        let mut i = i?;
+        let mut i = i.ok_or(MerkleError::NotFound)?;
         
         // 2. Push it's partner in the same level to the proof
         
-        // If even, the partner is i + 1; if odd, the partner is i - 1
+        // If even, the partner's index is i + 1; if odd, it is i - 1
         let i_partner = if i % 2 == 0 {
             i + 1
         }
@@ -97,25 +98,33 @@ impl MerkleTree{
             };
             proof.push(self.tree[level][idx].clone());
             level += 1;
+            i = idx;
         }
-        Some(proof)
+        Ok(proof)
     }
 
     /// Adds element and rebuilds the tree.
-    pub fn add_element(&mut self, element: String){
-        let second_to_last = self.tree[0].get(self.tree[0].len()-2).unwrap();
-        let last = self.tree[0].last().unwrap();
-        if last == second_to_last {
-            // replace last, they are equal because qty of elements was uneven in the first place.
-            self.tree[0].pop();
+    pub fn add_element(&mut self, element: String) -> Result<(), MerkleError>{
+        
+        // Check if last 2 elements are equal, which means the last one was cloned
+        if self.tree[0].len() >= 2 {
+            let second_to_last = self.tree[0].get(self.tree[0].len()-2).ok_or(MerkleError::LastElementErr)?;
+            let last = self.tree[0].last().ok_or(MerkleError::LastElementErr)?;
+
+            if last == second_to_last {
+                // replace last element because it's a clone, not a concrete element.
+                self.tree[0].pop();
+            }
         }
         
-        self.tree[0].push(element);
+        let hashed_element = Self::hash(&element);
+        self.tree[0].push(hashed_element);
         
         match MerkleTree::build(self.tree[0].clone()){
-            Some(tree) => {*self = tree},
-            None => {println!("There has been an error in building a tree")}
+            Ok(tree) => {*self = tree},
+            Err(e) => {return Err(e)}
         };
+        Ok(())
     }
 
     // Given a level N of the tree it calculates and returns the upper level of it.

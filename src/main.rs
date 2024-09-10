@@ -11,7 +11,7 @@ fn main() {
     let elements = vec![a, b,c,d];
     let mut mktree = MerkleTree::build(elements).unwrap();
 
-    let proof = mktree.gen_proof("a".to_string());
+    let proof = mktree.gen_proof("2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6".to_string()).unwrap();
 
     println!("{:?}",mktree);
 
