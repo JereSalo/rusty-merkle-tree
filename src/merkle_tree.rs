@@ -175,6 +175,16 @@ impl MerkleTree{
 mod tests {
     use super::*;
     
+    fn build_basic_tree() -> MerkleTree{
+        let a = "a".to_string();
+        let b = "b".to_string();
+        let c = "c".to_string();
+        let d = "d".to_string();
+        let elements = vec![a, b, c, d];
+
+        MerkleTree::build(elements).unwrap()
+    }
+
     #[test]
     fn calculate_hash(){
         // SHA256 of "a" is ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb
@@ -223,5 +233,34 @@ mod tests {
         let expected_root = "58c89d709329eb37285837b042ab6ff72c7c8f74de0446b091b6a0131c102cfd";
 
         assert_eq!(merkle_root,expected_root);
+    }
+
+    #[test]
+    fn verify_proof_true(){
+        let mktree = build_basic_tree();
+
+        // Provided the right proof for a tree return true.
+        let hash = "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6".to_string();
+        let proof = [ProofElement { hash: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4".to_string(), left: false }, ProofElement { hash: "62af5c3cb8da3e4f25061e829ebeea5c7513c54949115b1acc225930a90154da".to_string(), left: true }].to_vec();
+
+
+        let validation = mktree.verify(hash, proof).unwrap();
+
+        assert!(validation);
+    }
+
+    #[test]
+    fn verify_proof_false(){
+        let mktree = build_basic_tree();
+
+        // Provided the wrong proof for a tree return false.
+        let hash = "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6".to_string();
+        // WRONG PROOF FOR THIS ELEMENT
+        let proof = [ProofElement { hash: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4".to_string(), left: false }, ProofElement { hash: "62af5c3cb8da3e4f25061JEREebeea5c7513c54949115b1acc225930a90154da".to_string(), left: true }].to_vec();
+
+        
+        let validation = mktree.verify(hash, proof).unwrap();
+
+        assert!(!validation);
     }
 }
