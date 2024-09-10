@@ -18,7 +18,7 @@ fn main() {
     let hash = "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6".to_string();
     
 
-    let verifcation = mktree.verify(hash, proof.clone());
+    let verifcation = mktree.verify(hash, proof.clone()).unwrap();
     println!("{}", verifcation);
     
 

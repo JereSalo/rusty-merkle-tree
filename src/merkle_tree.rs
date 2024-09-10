@@ -54,21 +54,21 @@ impl MerkleTree{
     }
 
     
-    pub fn verify(&self, hash: Hash, proof: Vec<ProofElement>) -> bool{
-        // Iterate proof and hash. Maybe a fold with seed hash
-        let calc_root = proof.iter().fold(hash, |acc, next_hash| { 
-            let combined_hashes = if next_hash.left {
-                next_hash.hash.clone() + &acc
+    pub fn verify(&self, hash: Hash, proof: Vec<ProofElement>) -> Result<bool, MerkleError>{
+        // Calculates root with element hash (leaf node) and it's proof
+        let calc_root = proof.iter().fold(hash, |cur_hash, partner| { 
+            let combined_hashes = if partner.left {
+                partner.hash.clone() + &cur_hash
             } else {
-                acc + &next_hash.hash
+                cur_hash + &partner.hash
             };
 
             MerkleTree::hash(&combined_hashes)
         });
 
-        let real_root = self.tree.last().unwrap().get(0).unwrap();
+        let real_root = self.tree.last().ok_or(MerkleError::EmptyList)?.get(0).ok_or(MerkleError::EmptyList)?;
 
-        calc_root == *real_root
+        Ok(calc_root == *real_root)
     }
     
     pub fn gen_proof(&self, hash: Hash) -> Result<Vec<ProofElement>, MerkleError> {
