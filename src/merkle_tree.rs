@@ -33,7 +33,7 @@ impl MerkleTree{
         merkle_tree.tree.push(elements_to_push.clone());
         
         // 3. Calculate upper levels and push them to the tree until root is reached.
-        while elements_to_push.len() > 1{
+        while elements_to_push.len() > 1 {
             elements_to_push = Self::calculate_upper_level(&elements_to_push);
 
             // If qty of elements in a non-root node is uneven clone the last one.
@@ -106,7 +106,7 @@ impl MerkleTree{
     /// Adds element and rebuilds the tree.
     pub fn add_element(&mut self, element: String) -> Result<(), MerkleError>{
         
-        // Check if last 2 elements are equal, which means the last one was cloned
+        // Check if last 2 elements are equal, which if true would mean the last one was cloned
         if self.tree[0].len() >= 2 {
             let second_to_last = self.tree[0].get(self.tree[0].len()-2).ok_or(MerkleError::LastElementErr)?;
             let last = self.tree[0].last().ok_or(MerkleError::LastElementErr)?;
@@ -119,22 +119,18 @@ impl MerkleTree{
         
         let hashed_element = Self::hash(&element);
         self.tree[0].push(hashed_element);
-        
-        match MerkleTree::build(self.tree[0].clone()){
-            Ok(tree) => {*self = tree},
-            Err(e) => {return Err(e)}
-        };
+
+        *self = MerkleTree::build(self.tree[0].clone())?; // Rebuilds the tree from scratch, not efficient but Make it Work
         Ok(())
     }
 
     // Given a level N of the tree it calculates and returns the upper level of it.
-    // Note: I'm not considering the case of odd qty of elements being sent because it is something that won't happen. The tree will always have even number of leafs.
+    // Note: I'm not considering the case of odd qty of elements being sent because it is something that won't happen. The tree will always have even number of nodes on each sub-root level.
     fn calculate_upper_level(actual_level: &Vec<Hash>) -> Vec<Hash>{
         let mut next_level: Vec<Hash> = vec![];
 
         // Iterate list and calculate hashes
         for (i, s_left) in actual_level.iter().enumerate().step_by(2){
-            // Considering even only. Actual level is going to have even number of elements in a Merkle Tree.
             let s_right = &actual_level[i+1];
 
             let combined_hashes = format!("{}{}", s_left, s_right);
