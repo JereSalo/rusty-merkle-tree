@@ -91,19 +91,13 @@ impl MerkleTree{
         Ok(proof)
     }
 
-    
-
     /// Hashes element and adds it to the merkle tree.  
     /// In this implementation tree is built from scratch.
     pub fn add_element(&mut self, element: String) -> Result<(), MerkleError>{
         
-        // Check if last 2 elements are equal, which if true would mean the last one was cloned
-        if self.tree[0].len() >= 2 {
-            let second_to_last = self.tree[0].get(self.tree[0].len()-2).ok_or(MerkleError::LastElementErr)?;
-            let last = self.tree[0].last().ok_or(MerkleError::LastElementErr)?;
-
-            if last == second_to_last {
-                // replace last element because it's a clone, not a concrete element.
+        // If last 2 elements are equal then remove the last one because it is a clone.
+        if let Some((last, second_to_last)) = self.tree[0].split_last() {
+            if second_to_last.last() == Some(last) {
                 self.tree[0].pop();
             }
         }
