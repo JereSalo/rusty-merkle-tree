@@ -1,4 +1,4 @@
-use std::{error, vec};
+use std::vec;
 use hex;
 use sha2::{Digest, Sha256};
 use crate::merkle_error::MerkleError;
@@ -7,7 +7,7 @@ use crate::merkle_proof::ProofElement;
 /// A Hash is a String, just to differentiate it from a normal element String.
 type Hash = String;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct MerkleTree{
     tree: Vec<Vec<String>>
 }
@@ -24,6 +24,37 @@ impl MerkleTree{
             let hash = Self::hash(&element);
             elements_to_push.push(hash);
         }
+
+        // clone the last one if qty of elements is odd
+        if elements_to_push.len() % 2 != 0 {
+            let last = elements_to_push.last().ok_or(MerkleError::EmptyList)?.clone();
+            elements_to_push.push(last);
+        }
+        
+        merkle_tree.tree.push(elements_to_push.clone());
+        
+        // 3. Calculate upper levels and push them to the tree until root is reached.
+        while elements_to_push.len() > 1 {
+            elements_to_push = Self::calculate_upper_level(&elements_to_push);
+
+            // If qty of elements in a non-root node is uneven clone the last one.
+            if elements_to_push.len() % 2 != 0 && elements_to_push.len() > 1 { 
+                let last = elements_to_push.last().ok_or(MerkleError::EmptyList)?.clone();
+                elements_to_push.push(last);
+            }
+            
+            merkle_tree.tree.push(elements_to_push.clone());
+        }
+
+        Ok(merkle_tree)
+    }
+
+    pub fn build_without_hashing(elements: Vec<Hash>) -> Result<Self, MerkleError>{
+        // 1. New merkle tree
+        let mut merkle_tree = MerkleTree::new();
+
+        // 2. Hash elements and push them into tree
+        let mut elements_to_push = elements.clone();
 
         // clone the last one if qty of elements is odd
         if elements_to_push.len() % 2 != 0 {
@@ -132,10 +163,10 @@ impl MerkleTree{
             }
         }
         
-        let hashed_element = Self::hash(&element);
+        let hashed_element = Self::hash(&element); 
         self.tree[0].push(hashed_element);
 
-        *self = MerkleTree::build(self.tree[0].clone())?; // Rebuilds the tree from scratch, not efficient but Make it Work
+        *self = MerkleTree::build_without_hashing(self.tree[0].clone())?; // Rebuilds the tree from scratch, not efficient but Make it Work
         Ok(())
     }
 
@@ -157,7 +188,7 @@ impl MerkleTree{
         next_level
     }
 
-    pub fn hash(element: &str) -> Hash{
+    fn hash(element: &str) -> Hash{
         let mut hasher = Sha256::new();
         hasher.update(element);
         let result = hasher.finalize();
@@ -267,5 +298,18 @@ mod tests {
         let validation = mktree.verify(hash, proof).unwrap();
 
         assert!(!validation);
+    }
+
+    #[test]
+    fn add_element(){
+        let expected_tree = build_basic_tree();
+        let mut mktree = MerkleTree {tree: vec![vec![]]};
+
+        let _ = mktree.add_element("a".to_string());
+        let _ = mktree.add_element("b".to_string());
+        let _ = mktree.add_element("c".to_string());
+        let _ = mktree.add_element("d".to_string());
+
+        assert_eq!(mktree, expected_tree);
     }
 }
