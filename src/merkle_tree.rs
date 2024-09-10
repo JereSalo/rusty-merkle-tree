@@ -2,7 +2,7 @@ use std::vec;
 use hex;
 use sha2::{Digest, Sha256};
 use crate::merkle_error::MerkleError;
-use crate::merkle_proof::ProofElement;
+use crate::proof_element::ProofElement;
 
 #[derive(Debug, PartialEq)]
 pub struct MerkleTree{
@@ -47,15 +47,6 @@ impl MerkleTree{
         MerkleTree { tree: vec![vec![]] }
     }
 
-    /// Duplicates last element if level of tree is odd, so that it becomes even.
-    fn duplicate_last_if_odd(elements: &mut Vec<String>) -> Result<(), MerkleError> {
-        if elements.len() % 2 != 0 {
-            let last = elements.last().ok_or(MerkleError::EmptyList)?.clone();
-            elements.push(last);
-        }
-        Ok(())
-    }
-
     
     pub fn verify(&self, hash: String, proof: Vec<ProofElement>) -> Result<bool, MerkleError>{
         // Calculates root with element hash (leaf node) and it's proof
@@ -77,42 +68,21 @@ impl MerkleTree{
     pub fn gen_proof(&self, hash: String) -> Result<Vec<ProofElement>, MerkleError> {
         let mut proof: Vec<ProofElement> = vec![];
         
-        // 1. Find hash index
-        let mut i: Option<usize> = None;
-        for (index, element) in self.tree[0].iter().enumerate() {
-            if *element == hash {
-                i = Some(index);
-                break;
-            }
-        }
-        
-        let mut i = i.ok_or(MerkleError::NotFound)?;
+        // 1. Find index of given hash in leaves.
+        let mut i = self.find_hash_index(hash)?;
         
         // 2. Push it's partner in the same level to the proof
         
         // If even, the partner's index is i + 1; if odd, it is i - 1
-        let i_partner = if i % 2 == 0 {
-            i + 1
-        }
-        else{
-            i - 1
-        };
+        let i_partner = Self::get_partner_index(i);
         
         let proof_elem = ProofElement::new_from_index(self.tree[0][i_partner].clone(), i_partner);
         proof.push(proof_elem);
         
-        // 3. Now push the elements, climbing up on every level
+        // 3. Now push the elements, climbing up on every level. Stopping right before reaching the root node.
         let mut level = 1;
-        while level < self.tree.len() - 1 { // While root hasn't been reached
-            // Math for getting the next element in the proof:
-            //      floor(n/2) + 1 if floor(n/2) even
-            //      floor(n/2) - 1 if floor(n/2) odd
-            let idx= if (i/2) % 2 == 0 {
-                i/2 + 1
-            }
-            else{
-                i/2 - 1
-            };
+        while level < self.tree.len() - 1 {
+            let idx= Self::get_partner_index(i/2); // i/2 because we go up to a level that has half of the elements
             let proof_elem = ProofElement::new_from_index(self.tree[level][idx].clone(), idx);
             proof.push(proof_elem);
             level += 1;
@@ -121,7 +91,10 @@ impl MerkleTree{
         Ok(proof)
     }
 
-    /// Adds element and rebuilds the tree.
+    
+
+    /// Hashes element and adds it to the merkle tree.  
+    /// In this implementation tree is built from scratch.
     pub fn add_element(&mut self, element: String) -> Result<(), MerkleError>{
         
         // Check if last 2 elements are equal, which if true would mean the last one was cloned
@@ -142,8 +115,9 @@ impl MerkleTree{
         Ok(())
     }
 
-    // Given a level N of the tree it calculates and returns the upper level of it.
-    // Note: I'm not considering the case of odd qty of elements being sent because it is something that won't happen. The tree will always have e2ven number of nodes on each sub-root level.
+    /// Given a level N of the tree it calculates and returns the upper level of it.
+    /// > Note: Case of level with odd quantity of elements is not considered because
+    /// Merkle Tree always has an even quantity of elements (last one duplicated if necessary)
     fn calculate_upper_level(actual_level: &Vec<String>) -> Vec<String>{
         let mut next_level: Vec<String> = vec![];
 
@@ -160,6 +134,7 @@ impl MerkleTree{
         next_level
     }
 
+    /// Returns SHA256 of a given element.
     fn hash(element: &str) -> String{
         let mut hasher = Sha256::new();
         hasher.update(element);
@@ -167,9 +142,43 @@ impl MerkleTree{
         hex::encode(result)
     }
 
+    /// If tree is not empty, returns it's root hash.
     fn get_root(&self) -> Result<&String, MerkleError>{
         let root = self.tree.last().ok_or(MerkleError::EmptyList)?.get(0).ok_or(MerkleError::EmptyList)?;
         Ok(root)
+    }
+
+    /// Duplicates last element if level of tree is odd, so that it becomes even. Auxiliary function for build method.
+    fn duplicate_last_if_odd(elements: &mut Vec<String>) -> Result<(), MerkleError> {
+        if elements.len() % 2 != 0 {
+            let last = elements.last().ok_or(MerkleError::EmptyList)?.clone();
+            elements.push(last);
+        }
+        Ok(())
+    }
+
+    /// Tries to find the index of a given hash. Returns error if not found.
+    fn find_hash_index(&self, hash: String) -> Result<usize, MerkleError>{
+        let mut i: Option<usize> = None; // Option because it's not guaranteed that i is going to be assigned a value.
+        
+        for (index, element) in self.tree[0].iter().enumerate() {
+            if *element == hash {
+                i = Some(index);
+                break;
+            }
+        }
+
+        Ok(i.ok_or(MerkleError::NotFound)?)
+    }
+
+    /// Given an element's index, gets it's partner's index.
+    fn get_partner_index(my_index: usize) -> usize {
+        if my_index % 2 == 0 {
+            my_index + 1
+        }
+        else{
+            my_index - 1
+        }
     }
 }
 
