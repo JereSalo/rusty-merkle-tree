@@ -2,6 +2,7 @@ use std::{error, vec};
 use hex;
 use sha2::{Digest, Sha256};
 use crate::merkle_error::MerkleError;
+use crate::merkle_proof::ProofElement;
 
 /// A Hash is a String, just to differentiate it from a normal element String.
 type Hash = String;
@@ -53,17 +54,25 @@ impl MerkleTree{
     }
 
     
-    pub fn verify(&self, hash: Hash, proof: Vec<Hash>) -> bool{
+    pub fn verify(&self, hash: Hash, proof: Vec<ProofElement>) -> bool{
         // Iterate proof and hash. Maybe a fold with seed hash
-        let calc_root = proof.iter().fold(hash, |acc, next_hash| { Self::hash(&(acc + &next_hash))});
-        // WRONG, MERKLE PROOF NEEDS TO SAY IF HASH IS LEFT OR RIGHT
-        let real_root = "todo".to_string();
+        let calc_root = proof.iter().fold(hash, |acc, next_hash| { 
+            let combined_hashes = if next_hash.left {
+                next_hash.hash.clone() + &acc
+            } else {
+                acc + &next_hash.hash
+            };
 
-        calc_root == real_root
+            MerkleTree::hash(&combined_hashes)
+        });
+
+        let real_root = self.tree.last().unwrap().get(0).unwrap();
+
+        calc_root == *real_root
     }
     
-    pub fn gen_proof(&self, hash: Hash) -> Result<Vec<Hash>, MerkleError> {
-        let mut proof: Vec<Hash> = vec![];
+    pub fn gen_proof(&self, hash: Hash) -> Result<Vec<ProofElement>, MerkleError> {
+        let mut proof: Vec<ProofElement> = vec![];
         
         // 1. Find hash index
         let mut i: Option<usize> = None;
@@ -86,7 +95,8 @@ impl MerkleTree{
             i - 1
         };
         
-        proof.push(self.tree[0][i_partner].clone());
+        let proof_elem = ProofElement::new_from_index(self.tree[0][i_partner].clone(), i_partner);
+        proof.push(proof_elem);
         
         // 3. Now push the elements, climbing up on every level
         let mut level = 1;
@@ -100,7 +110,8 @@ impl MerkleTree{
             else{
                 i/2 - 1
             };
-            proof.push(self.tree[level][idx].clone());
+            let proof_elem = ProofElement::new_from_index(self.tree[level][idx].clone(), idx);
+            proof.push(proof_elem);
             level += 1;
             i = idx;
         }

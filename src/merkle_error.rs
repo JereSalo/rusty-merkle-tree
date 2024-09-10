@@ -1,5 +1,4 @@
 
-
 #[derive(Debug)]
 pub enum MerkleError{
     EmptyList,
