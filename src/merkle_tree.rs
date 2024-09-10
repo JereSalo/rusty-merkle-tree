@@ -138,14 +138,14 @@ impl MerkleTree{
 
     /// If tree is not empty, returns it's root hash.
     fn get_root(&self) -> Result<&String, MerkleError>{
-        let root = self.tree.last().ok_or(MerkleError::EmptyList)?.get(0).ok_or(MerkleError::EmptyList)?;
+        let root = self.tree.last().ok_or(MerkleError::EmptyList("tree".to_string()))?.get(0).ok_or(MerkleError::EmptyList("root".to_string()))?;
         Ok(root)
     }
 
     /// Duplicates last element if level of tree is odd, so that it becomes even. Auxiliary function for build method.
     fn duplicate_last_if_odd(elements: &mut Vec<String>) -> Result<(), MerkleError> {
         if elements.len() % 2 != 0 {
-            let last = elements.last().ok_or(MerkleError::EmptyList)?.clone();
+            let last = elements.last().ok_or(MerkleError::EmptyList("elements".to_string()))?.clone();
             elements.push(last);
         }
         Ok(())
@@ -162,7 +162,7 @@ impl MerkleTree{
             }
         }
 
-        Ok(i.ok_or(MerkleError::NotFound)?)
+        Ok(i.ok_or(MerkleError::NotFound(hash))?)
     }
 
     /// Given an element's index, gets it's partner's index.
