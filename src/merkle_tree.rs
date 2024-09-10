@@ -1,6 +1,6 @@
 use std::vec;
 use hex;
-use sha2::{digest::block_buffer::Error, Digest, Sha256};
+use sha2::{Digest, Sha256};
 
 /// A Hash is a String, just to differentiate it from a normal element String.
 type Hash = String;
@@ -12,7 +12,7 @@ pub struct MerkleTree{
 
 impl MerkleTree{
     // Considerations for implementing the most basic thing:
-    //  Not going to hash elements, assuming n of elements are even
+    //  Not going to hash elements
     pub fn build(elements: Vec<String>) -> Self{
         // 1. New merkle tree
         let mut merkle_tree = MerkleTree::new();
@@ -75,11 +75,6 @@ impl MerkleTree{
     pub fn gen_proof(&self, hash: Hash) -> Option<Vec<Hash>> {
         let mut proof: Vec<Hash> = vec![];
 
-        // starting from 0
-        // floor(n/2) - 1 if floor(n/2) odd
-        // floor(n/2) + 1 if floor(n/2) even
-        // first get the opposite element
-
         // 1. Find hash index
         let mut i: Option<usize> = None;
         for (index, element) in self.tree[0].iter().enumerate() {
@@ -89,9 +84,9 @@ impl MerkleTree{
             }
         }
 
-        let i = i?;
+        let mut i = i?;
 
-        // 2. Push it's partner in the same level
+        // 2. Push it's partner in the same level to the proof
 
         // If even, the partner is i + 1; if odd, the partner is i - 1
         let i_partner = if i % 2 == 0 {
@@ -103,17 +98,18 @@ impl MerkleTree{
 
         proof.push(self.tree[0][i_partner].clone());
 
-        // 3. Now push the elements, scaling on every level
-        let mut n = i;
+        // 3. Now push the elements, climbing up on every level
         let mut level = 1;
-        while level < self.tree.len() - 1 {
-            let idx;
-            if (n/2) % 2 == 0 {
-                idx = n/2 + 1;
+        while level < self.tree.len() - 1 { // While root hasn't been reached
+            // Math for getting the next element in the proof:
+            //      floor(n/2) + 1 if floor(n/2) even
+            //      floor(n/2) - 1 if floor(n/2) odd
+            let idx= if (i/2) % 2 == 0 {
+                i/2 + 1
             }
             else{
-                idx = n/2 - 1;
-            }
+                i/2 - 1
+            };
             proof.push(self.tree[level][idx].clone());
             level += 1;
         }
@@ -121,7 +117,7 @@ impl MerkleTree{
         Some(proof)
     }
 
-    // even_elem = !even_elem;
+    /// Adds element and rebuilds the tree.
     pub fn add_element(&mut self, element: String){
         let second_to_last = self.tree[0].get(self.tree[0].len()-2).unwrap();
         let last = self.tree[0].last().unwrap();
