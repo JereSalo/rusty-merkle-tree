@@ -55,7 +55,11 @@ impl MerkleTree{
     
     pub fn verify(&self, hash: Hash, proof: Vec<Hash>) -> bool{
         // Iterate proof and hash. Maybe a fold with seed hash
-        todo!();
+        let calc_root = proof.iter().fold(hash, |acc, next_hash| { Self::hash(&(acc + &next_hash))});
+        // WRONG, MERKLE PROOF NEEDS TO SAY IF HASH IS LEFT OR RIGHT
+        let real_root = "todo".to_string();
+
+        calc_root == real_root
     }
     
     pub fn gen_proof(&self, hash: Hash) -> Result<Vec<Hash>, MerkleError> {
@@ -125,7 +129,7 @@ impl MerkleTree{
     }
 
     // Given a level N of the tree it calculates and returns the upper level of it.
-    // Note: I'm not considering the case of odd qty of elements being sent because it is something that won't happen. The tree will always have even number of nodes on each sub-root level.
+    // Note: I'm not considering the case of odd qty of elements being sent because it is something that won't happen. The tree will always have e2ven number of nodes on each sub-root level.
     fn calculate_upper_level(actual_level: &Vec<Hash>) -> Vec<Hash>{
         let mut next_level: Vec<Hash> = vec![];
 
@@ -142,7 +146,7 @@ impl MerkleTree{
         next_level
     }
 
-    fn hash(element: &str) -> Hash{
+    pub fn hash(element: &str) -> Hash{
         let mut hasher = Sha256::new();
         hasher.update(element);
         let result = hasher.finalize();

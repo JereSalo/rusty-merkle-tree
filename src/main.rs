@@ -15,6 +15,20 @@ fn main() {
 
     println!("{:?}",mktree);
 
+    let hash = "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6".to_string();
+    let calc_root = proof.iter().fold(hash, |acc, next_hash| { 
+            println!("acc {}, next hash: {}", acc, next_hash); 
+            if index % 2 == 0 {
+                MerkleTree::hash(&(acc + &next_hash))
+            } else {
+                MerkleTree::hash(&(next_hash.to_owned() + &acc))
+            }
+            });
+
+    // In concat the order is from left to right, here I'm not specifying an order
+    // I need hash index for this...
+    // Even index: left, odd index: right
 
     println!("Proof: {:?}",proof);
+    println!("Calculated Root: {}", calc_root);
 }
