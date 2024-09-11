@@ -1,5 +1,6 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use merkle_tree::merkle_tree::MerkleTree;
 use std::io::{self, Write};
 
 /// CLI tool for tree-related operations
@@ -42,6 +43,7 @@ enum Commands {
 }
 
 fn main() -> Result<()> {
+    let mut mktree: MerkleTree = MerkleTree::new_empty();
     loop {
         // Display prompt
         print!("tree> ");
@@ -77,8 +79,7 @@ fn main() -> Result<()> {
         // Match on the parsed subcommand
         match command {
             Commands::Show => {
-                println!("Showing the tree structure...");
-                show_tree();
+                println!("Built tree: {:?}", mktree);
             }
             Commands::Add { element } => {
                 println!("Adding element: {}", element);
@@ -93,8 +94,8 @@ fn main() -> Result<()> {
                 generate_proof(&hash);
             }
             Commands::Build { elements } => {
-                println!("Building tree with elements: {:?}", elements);
-                build_tree(&elements);
+                println!("Tree built with elements {:?}", &elements);
+                mktree = MerkleTree::build(elements)?;
             }
         }
     }
@@ -117,8 +118,4 @@ fn verify_hash(hash: &str) {
 
 fn generate_proof(hash: &str) {
     println!("Proof generated for hash {}.", hash);
-}
-
-fn build_tree(elements: &[String]) {
-    println!("Tree built with elements: {:?}", elements);
 }
