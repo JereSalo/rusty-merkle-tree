@@ -130,7 +130,12 @@ impl MerkleTree {
 
     /// If tree is not empty, returns it's root hash.
     fn get_root(&self) -> Result<&Hash, MerkleError> {
-        let root = self.tree.last().ok_or(MerkleError::EmptyList("tree".to_string()))?.first().ok_or(MerkleError::EmptyList("root".to_string()))?;
+        let root = self
+            .tree
+            .last()
+            .ok_or(MerkleError::EmptyList("tree".to_string()))?
+            .first()
+            .ok_or(MerkleError::EmptyList("root".to_string()))?;
         Ok(root)
     }
 
