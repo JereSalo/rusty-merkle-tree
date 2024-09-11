@@ -71,22 +71,14 @@ impl MerkleTree{
         // 1. Find index of given hash in leaves.
         let mut i = self.find_hash_index(hash)?;
         
-        // 2. Push it's partner in the same level to the proof
-        
-        // If even, the partner's index is i + 1; if odd, it is i - 1
-        let i_partner = Self::get_partner_index(i);
-        
-        let proof_elem = ProofElement::new_from_index(self.tree[0][i_partner].clone(), i_partner);
-        proof.push(proof_elem);
-        
-        // 3. Now push the elements, climbing up on every level. Stopping right before reaching the root node.
-        let mut level = 1;
+        // 2. Push the elements, climbing up on every level. Stopping right before reaching the root node.
+        let mut level = 0;
         while level < self.tree.len() - 1 {
-            let idx= Self::get_partner_index(i/2); // i/2 because we go up to a level that has half of the elements
-            let proof_elem = ProofElement::new_from_index(self.tree[level][idx].clone(), idx);
+            let i_partner= Self::get_partner_index(i); 
+            let proof_elem = ProofElement::new_from_index(self.tree[level][i_partner].clone(), i_partner);
             proof.push(proof_elem);
             level += 1;
-            i = idx;
+            i /= 2;
         }
         Ok(proof)
     }
