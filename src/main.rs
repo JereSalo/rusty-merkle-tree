@@ -16,31 +16,23 @@ struct Cli {
 enum Commands {
     /// Shows the tree structure
     Show,
-
     /// Adds an element to the tree
     Add {
-        /// The element to add
         element: String,
     },
-
     /// Verifies a proof for a given hash
     Verify {
-        /// The hash to verify
         hash: String,
         proof_file: PathBuf,
     },
-
     /// Generates a proof for a given hash.
     Proof {
-        /// The hash to generate proof for
         hash: String,
     },
-
     /// Builds a tree with the provided elements.
     Build {
-        /// Elements to build the tree with
         elements: Vec<String>,
-    },
+    }
 }
 
 fn main() -> Result<()> {
@@ -68,7 +60,7 @@ fn main() -> Result<()> {
             continue;
         }
 
-        // Simulate command-line arguments parsing by passing `parts` to `clap`
+        // Parse command
         let command = match Cli::try_parse_from(parts.iter()) {
             Ok(cli) => cli.command,
             Err(err) => {
@@ -77,7 +69,7 @@ fn main() -> Result<()> {
             }
         };
 
-        // Match on the parsed subcommand
+        // Match on the parsed command
         match command {
             Commands::Show => {
                 println!("{}", mktree);
