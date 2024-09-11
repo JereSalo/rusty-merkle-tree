@@ -6,14 +6,15 @@ use sha2::{Digest, Sha256};
 use std::fmt;
 use std::vec;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Default)]
 pub struct MerkleTree {
     tree: Vec<Vec<Hash>>,
 }
 
 impl fmt::Display for MerkleTree {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for (level, nodes) in self.tree.iter().enumerate() {
+        // Reverse the tree levels for printing, starting with the root node.
+        for (level, nodes) in self.tree.iter().rev().enumerate() {
             writeln!(f, "Level {}:\n  {}", level, nodes.join("\n  "))?;
         }
         Ok(())

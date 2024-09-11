@@ -7,14 +7,17 @@ use std::{
     path::PathBuf,
 };
 
-
 /// CLI tool for tree-related operations
 #[derive(Parser, Debug)]
 #[command(name = "tree")]
 #[command(about = "Tree command-line tool", long_about = None)]
-struct Cli {
+pub struct Cli {
     #[command(subcommand)]
     command: Commands,
+    
+    /// Merkle tree instance to hold the state
+    #[arg(skip)]
+    mktree: MerkleTree,
 }
 
 #[derive(Subcommand, Debug)]
@@ -31,86 +34,94 @@ enum Commands {
     Build { elements: Vec<String> },
 }
 
-pub fn run() -> Result<()> {
-    let mut mktree: MerkleTree = MerkleTree::new_empty();
-    loop {
-        // Display prompt
-        print!("tree> ");
-        io::stdout().flush()?; // Flush prompt to the terminal
-
-        // Read input from the user
-        let mut input = String::new();
-        io::stdin().read_line(&mut input)?;
-
-        // Trim the input and split it into parts
-        let input = input.trim();
-        let parts: Vec<&str> = input.split_whitespace().collect();
-
-        // Exit condition
-        if input == "exit" {
-            break;
+impl Cli {
+    pub fn new() -> Self {
+        Cli {
+            command: Commands::Show, // Placeholder, will be overridden by parsing
+            mktree: MerkleTree::new_empty(),
         }
+    }
 
-        // Skip empty input
-        if parts.is_empty() {
-            continue;
-        }
+    pub fn run(&mut self) -> Result<()> {
+        loop {
+            // Display prompt
+            print!("tree> ");
+            io::stdout().flush()?; // Flush prompt to the terminal
 
-        // Parse command
-        let command = match Cli::try_parse_from(parts.iter()) {
-            Ok(cli) => cli.command,
-            Err(err) => {
-                println!("{}", err);
+            // Read input from the user
+            let mut input = String::new();
+            io::stdin().read_line(&mut input)?;
+
+            // Trim the input and split it into parts
+            let input = input.trim();
+            let parts: Vec<&str> = input.split_whitespace().collect();
+
+            // Exit condition
+            if input == "exit" {
+                break;
+            }
+
+            // Skip empty input
+            if parts.is_empty() {
                 continue;
             }
-        };
 
-        if let Err(e) = execute_command(command, &mut mktree) {
-            println!("Error: {}", e);
-        }
-    }
+            // Parse command
+            let command = match Cli::try_parse_from(parts.iter()) {
+                Ok(cli) => cli.command,
+                Err(err) => {
+                    println!("{}", err);
+                    continue;
+                }
+            };
 
-    Ok(())
-}
-
-/// Execute the appropriate action for each command
-fn execute_command(command: Commands, mktree: &mut MerkleTree) -> Result<()> {
-    match command {
-        Commands::Show => {
-            println!("{}", mktree);
-        }
-        Commands::Add { element } => {
-            println!("Element '{}' hashed and added to the tree", element);
-            mktree.add_element(element)?;
-        }
-        Commands::Verify { hash, proof_file } => {
-            let proof = parse_proof(proof_file)?;
-
-            let result = mktree.verify(hash, proof)?;
-            if result {
-                println!("Verification successful. Correct proof for the given element.");
-            } else {
-                println!("Verification failed. Incorrect proof or element.");
+            // Execute the command and handle any errors
+            if let Err(e) = self.execute_command(command) {
+                println!("Error: {}", e);
             }
         }
-        Commands::Proof { hash } => {
-            let proof = mktree.gen_proof(hash.clone())?;
-            println!("Generated proof:");
-            for element in proof {
-                let hash = element.hash;
-                let position = if element.left { "left" } else { "right" };
-                println!("  {} - {}", hash, position);
+
+        Ok(())
+    }
+
+    fn execute_command(&mut self, command: Commands) -> Result<()> {
+        match command {
+            Commands::Show => {
+                println!("{}", self.mktree);
+            }
+            Commands::Add { element } => {
+                println!("Element '{}' hashed and added to the tree", element);
+                self.mktree.add_element(element)?;
+            }
+            Commands::Verify { hash, proof_file } => {
+                let proof = parse_proof(proof_file)?;
+
+                let result = self.mktree.verify(hash, proof)?;
+                if result {
+                    println!("Verification successful. Correct proof for the given element.");
+                } else {
+                    println!("Verification failed. Incorrect proof or element.");
+                }
+            }
+            Commands::Proof { hash } => {
+                let proof = self.mktree.gen_proof(hash.clone())?;
+                println!("Generated proof:");
+                for element in proof {
+                    let hash = element.hash;
+                    let position = if element.left { "left" } else { "right" };
+                    println!("  {} - {}", hash, position);
+                }
+            }
+            Commands::Build { elements } => {
+                println!("Tree built with elements {:?}", &elements);
+                self.mktree = MerkleTree::build(elements)?;
             }
         }
-        Commands::Build { elements } => {
-            println!("Tree built with elements {:?}", &elements);
-            *mktree = MerkleTree::build(elements)?;
-        }
+        Ok(())
     }
-    Ok(())
 }
 
-/// Parses the proof file into a list of `ProofElement`s
+/// Parses the proof file into a list of 'ProofElement's
 fn parse_proof(proof_file: PathBuf) -> Result<Vec<ProofElement>, Error> {
     let file = File::open(proof_file)?;
     let reader = BufReader::new(file);

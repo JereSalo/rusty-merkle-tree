@@ -1,5 +1,6 @@
 use merkle_tree::cli;
 
 fn main() -> anyhow::Result<()> {
-    cli::run()
+    let mut cli = cli::Cli::new();
+    cli.run()
 }
