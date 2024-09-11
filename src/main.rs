@@ -69,7 +69,6 @@ fn main() -> Result<()> {
             }
         };
 
-        // Match on the parsed command
         match command {
             Commands::Show => {
                 println!("{}", mktree);
@@ -83,20 +82,28 @@ fn main() -> Result<()> {
                 // File Format: hash;side 
                 //  Where side is either left or right.
                 let proof = match parse_proof(proof_file){
+                    Ok(proof) => {proof},
                     Err(e) => {println!("{}", e); continue;},
-                    Ok(proof) => {proof}
                 };
 
-                let result = mktree.verify(hash, proof)?;
+                let result = match mktree.verify(hash, proof){
+                    Ok(result) => result,
+                    Err(e) => {println!("{}",e); continue;}
+                };
+
                 if result {
-                    println!("Verification successful.");
+                    println!("Verification successful. Correct proof for the given element.");
                 } else {
-                    println!("Verification failed.");
+                    println!("Verification failed. Incorrect proof or element.");
                 }
             }
             Commands::Proof { hash } => {
+                let proof = match mktree.gen_proof(hash.clone()){
+                    Ok(proof) => {proof},
+                    Err(e) => {println!("{}",e); continue;}
+                };
+
                 println!("Generated proof:");
-                let proof = mktree.gen_proof(hash)?;
                 for element in proof{
                     let hash = element.hash;
                     let position = if element.left { "left" } else { "right" };
@@ -123,8 +130,7 @@ fn parse_proof(proof_file: PathBuf) -> Result<Vec<ProofElement>,Error>{
         let line = line?;
         let parts: Vec<&str> = line.split(';').collect();
         if parts.len() != 2 || (parts[1] != "left" && parts[1] != "right"){
-            eprintln!("Invalid proof element format: {}", line);
-            continue;
+            return Err(anyhow::anyhow!("ERROR: Invalid proof element format - {}", line));
         }
         let hash = parts[0].to_string();
         let left = parts[1] == "left";

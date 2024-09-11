@@ -9,8 +9,8 @@ pub enum MerkleError {
 impl fmt::Display for MerkleError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            MerkleError::EmptyList(element) => write!(f, "EmptyList: {} list is empty", element),
-            MerkleError::NotFound(element) => write!(f, "NotFound: {} wasn't found", element),
+            MerkleError::EmptyList(element) => write!(f, "'{}' list is empty", element),
+            MerkleError::NotFound(element) => write!(f, "'{}' wasn't found in merkle tree", element),
         }
     }
 }
