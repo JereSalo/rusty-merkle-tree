@@ -4,10 +4,20 @@ use crate::proof_element::ProofElement;
 use hex;
 use sha2::{Digest, Sha256};
 use std::vec;
+use std::fmt;
 
 #[derive(Debug, PartialEq)]
 pub struct MerkleTree {
     tree: Vec<Vec<Hash>>,
+}
+
+impl fmt::Display for MerkleTree {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for (level, nodes) in self.tree.iter().enumerate() {
+            writeln!(f, "Level {}:\n  {}", level, nodes.join("\n  "))?;
+        }
+        Ok(())
+    }
 }
 
 impl MerkleTree {

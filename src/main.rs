@@ -79,19 +79,24 @@ fn main() -> Result<()> {
         // Match on the parsed subcommand
         match command {
             Commands::Show => {
-                println!("Built tree: {:?}", mktree);
+                println!("{}", mktree);
             }
             Commands::Add { element } => {
-                println!("Adding element: {}", element);
-                add_element(&element);
+                println!("Element '{}' hashed and added to the tree", element);
+                mktree.add_element(element)?;
             }
             Commands::Verify { hash } => {
                 println!("Verifying hash: {}", hash);
                 verify_hash(&hash);
             }
             Commands::Proof { hash } => {
-                println!("Generating proof for hash: {}", hash);
-                generate_proof(&hash);
+                println!("Generated proof:");
+                let proof = mktree.gen_proof(hash)?;
+                for element in proof{
+                    let hash = element.hash;
+                    let position = if element.left { "left" } else { "right" };
+                    println!("  {} - {}", hash, position);
+                }
             }
             Commands::Build { elements } => {
                 println!("Tree built with elements {:?}", &elements);
