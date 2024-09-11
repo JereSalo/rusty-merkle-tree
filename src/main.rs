@@ -1,7 +1,11 @@
 use anyhow::{Error, Result};
 use clap::{Parser, Subcommand};
-use merkle_tree::{merkle_error::MerkleError, merkle_tree::MerkleTree, proof_element::ProofElement};
-use std::{io::{self, Write, BufRead, BufReader}, path::PathBuf, fs::File};
+use merkle_tree::{merkle_tree::MerkleTree, proof_element::ProofElement};
+use std::{
+    fs::File,
+    io::{self, BufRead, BufReader, Write},
+    path::PathBuf,
+};
 
 /// CLI tool for tree-related operations
 #[derive(Parser, Debug)]
@@ -17,22 +21,13 @@ enum Commands {
     /// Shows the tree structure
     Show,
     /// Adds an element to the tree
-    Add {
-        element: String,
-    },
+    Add { element: String },
     /// Verifies a proof for a given hash
-    Verify {
-        hash: String,
-        proof_file: PathBuf,
-    },
+    Verify { hash: String, proof_file: PathBuf },
     /// Generates a proof for a given hash.
-    Proof {
-        hash: String,
-    },
+    Proof { hash: String },
     /// Builds a tree with the provided elements.
-    Build {
-        elements: Vec<String>,
-    }
+    Build { elements: Vec<String> },
 }
 
 fn main() -> Result<()> {
@@ -78,17 +73,23 @@ fn main() -> Result<()> {
                 mktree.add_element(element)?;
             }
             Commands::Verify { hash, proof_file } => {
-                // Read file and parse proof. 
-                // File Format: hash;side 
+                // Read file and parse proof.
+                // File Format: hash;side
                 //  Where side is either left or right.
-                let proof = match parse_proof(proof_file){
-                    Ok(proof) => {proof},
-                    Err(e) => {println!("{}", e); continue;},
+                let proof = match parse_proof(proof_file) {
+                    Ok(proof) => proof,
+                    Err(e) => {
+                        println!("{}", e);
+                        continue;
+                    }
                 };
 
-                let result = match mktree.verify(hash, proof){
+                let result = match mktree.verify(hash, proof) {
                     Ok(result) => result,
-                    Err(e) => {println!("{}",e); continue;}
+                    Err(e) => {
+                        println!("{}", e);
+                        continue;
+                    }
                 };
 
                 if result {
@@ -98,13 +99,16 @@ fn main() -> Result<()> {
                 }
             }
             Commands::Proof { hash } => {
-                let proof = match mktree.gen_proof(hash.clone()){
-                    Ok(proof) => {proof},
-                    Err(e) => {println!("{}",e); continue;}
+                let proof = match mktree.gen_proof(hash.clone()) {
+                    Ok(proof) => proof,
+                    Err(e) => {
+                        println!("{}", e);
+                        continue;
+                    }
                 };
 
                 println!("Generated proof:");
-                for element in proof{
+                for element in proof {
                     let hash = element.hash;
                     let position = if element.left { "left" } else { "right" };
                     println!("  {} - {}", hash, position);
@@ -120,17 +124,20 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn parse_proof(proof_file: PathBuf) -> Result<Vec<ProofElement>,Error>{
+fn parse_proof(proof_file: PathBuf) -> Result<Vec<ProofElement>, Error> {
     let file = File::open(proof_file)?;
     let reader = BufReader::new(file);
-    
+
     let mut proof = Vec::new();
-    
+
     for line in reader.lines() {
         let line = line?;
         let parts: Vec<&str> = line.split(';').collect();
-        if parts.len() != 2 || (parts[1] != "left" && parts[1] != "right"){
-            return Err(anyhow::anyhow!("ERROR: Invalid proof element format - {}", line));
+        if parts.len() != 2 || (parts[1] != "left" && parts[1] != "right") {
+            return Err(anyhow::anyhow!(
+                "ERROR: Invalid proof element format - {}",
+                line
+            ));
         }
         let hash = parts[0].to_string();
         let left = parts[1] == "left";

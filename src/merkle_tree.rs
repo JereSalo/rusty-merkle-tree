@@ -3,8 +3,8 @@ use crate::merkle_error::MerkleError;
 use crate::proof_element::ProofElement;
 use hex;
 use sha2::{Digest, Sha256};
-use std::vec;
 use std::fmt;
+use std::vec;
 
 #[derive(Debug, PartialEq)]
 pub struct MerkleTree {
