@@ -1,6 +1,6 @@
+use crate::{merkle_tree::MerkleTree, proof_element::ProofElement};
 use anyhow::{Error, Result};
 use clap::{Parser, Subcommand};
-use crate::{merkle_tree::MerkleTree, proof_element::ProofElement};
 use std::{
     fs::File,
     io::{self, BufRead, BufReader, Write},
@@ -14,7 +14,7 @@ use std::{
 pub struct Cli {
     #[command(subcommand)]
     command: Commands,
-    
+
     /// Merkle tree instance to hold the state
     #[arg(skip)]
     mktree: MerkleTree,
@@ -32,6 +32,12 @@ enum Commands {
     Proof { hash: String },
     /// Builds a tree with the provided elements.
     Build { elements: Vec<String> },
+}
+
+impl Default for Cli {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Cli {
