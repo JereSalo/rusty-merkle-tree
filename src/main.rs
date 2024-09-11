@@ -1,7 +1,7 @@
-use anyhow::Result;
+use anyhow::{Error, Result};
 use clap::{Parser, Subcommand};
-use merkle_tree::merkle_tree::MerkleTree;
-use std::io::{self, Write};
+use merkle_tree::{merkle_error::MerkleError, merkle_tree::MerkleTree, proof_element::ProofElement};
+use std::{io::{self, Write, BufRead, BufReader}, path::PathBuf, fs::File};
 
 /// CLI tool for tree-related operations
 #[derive(Parser, Debug)]
@@ -27,6 +27,7 @@ enum Commands {
     Verify {
         /// The hash to verify
         hash: String,
+        proof_file: PathBuf,
     },
 
     /// Generates a proof for a given hash.
@@ -85,9 +86,21 @@ fn main() -> Result<()> {
                 println!("Element '{}' hashed and added to the tree", element);
                 mktree.add_element(element)?;
             }
-            Commands::Verify { hash } => {
-                println!("Verifying hash: {}", hash);
-                verify_hash(&hash);
+            Commands::Verify { hash, proof_file } => {
+                // Read file and parse proof. 
+                // File Format: hash;side 
+                //  Where side is either left or right.
+                let proof = match parse_proof(proof_file){
+                    Err(e) => {println!("{}", e); continue;},
+                    Ok(proof) => {proof}
+                };
+
+                let result = mktree.verify(hash, proof)?;
+                if result {
+                    println!("Verification successful.");
+                } else {
+                    println!("Verification failed.");
+                }
             }
             Commands::Proof { hash } => {
                 println!("Generated proof:");
@@ -108,19 +121,24 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-// Mock functions for the subcommands
-fn show_tree() {
-    println!("Tree structure is shown here.");
-}
+fn parse_proof(proof_file: PathBuf) -> Result<Vec<ProofElement>,Error>{
+    let file = File::open(proof_file)?;
+    let reader = BufReader::new(file);
+    
+    let mut proof = Vec::new();
+    
+    for line in reader.lines() {
+        let line = line?;
+        let parts: Vec<&str> = line.split(';').collect();
+        if parts.len() != 2 || (parts[1] != "left" && parts[1] != "right"){
+            eprintln!("Invalid proof element format: {}", line);
+            continue;
+        }
+        let hash = parts[0].to_string();
+        let left = parts[1] == "left";
+        let proof_elem = ProofElement { hash, left };
+        proof.push(proof_elem);
+    }
 
-fn add_element(element: &str) {
-    println!("Element {} has been added to the tree.", element);
-}
-
-fn verify_hash(hash: &str) {
-    println!("Hash {} has been verified.", hash);
-}
-
-fn generate_proof(hash: &str) {
-    println!("Proof generated for hash {}.", hash);
+    Ok(proof)
 }
