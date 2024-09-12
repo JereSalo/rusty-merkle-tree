@@ -25,7 +25,7 @@ pub struct Cli {
 enum Commands {
     /// Shows the tree structure
     Show,
-    /// Adds an element to the tree, hashing it if -H flag provided
+    /// Adds an element to the tree, skipping the hashing part if -H flag provided
     Add {
         element: String,
 
@@ -36,7 +36,7 @@ enum Commands {
     Verify { hash: String, proof_file: PathBuf },
     /// Generates a proof for a given hash.
     Proof { hash: String },
-    /// Builds a tree with the provided elements, hashing them if -H flag provided.
+    /// Builds a tree with the provided elements, skipping the hashing part if -H flag provided.
     Build {
         elements: Vec<String>,
 
@@ -74,7 +74,7 @@ impl Cli {
             let parts: Vec<&str> = input.split_whitespace().collect();
 
             // Exit condition
-            if input == "exit" {
+            if input == "q" {
                 break;
             }
 
