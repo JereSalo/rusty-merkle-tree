@@ -1,5 +1,5 @@
 use crate::{merkle_tree::MerkleTree, proof_element::ProofElement, side::Side};
-use anyhow::{Error, Result};
+use anyhow::{Context, Error, Result};
 use clap::{Parser, Subcommand};
 use std::{
     fs::File,
@@ -58,15 +58,15 @@ impl Cli {
         }
     }
 
-    pub fn run(&mut self) -> Result<()> {
+    pub fn run(&mut self) -> anyhow::Result<()> {
         loop {
             // Display prompt
             print!("tree> ");
-            io::stdout().flush()?; // Flush prompt to the terminal
+            io::stdout().flush().context("Failed to flush stdout")?; // Flush prompt to the terminal
 
             // Read input from the user
             let mut input = String::new();
-            io::stdin().read_line(&mut input)?;
+            io::stdin().read_line(&mut input).context("Failed to read line")?;
 
             // Trim the input and split it into parts
             let input = input.trim();
