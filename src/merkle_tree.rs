@@ -24,6 +24,10 @@ impl fmt::Display for MerkleTree {
 }
 
 impl MerkleTree {
+    pub fn new_empty() -> MerkleTree {
+        MerkleTree { tree: vec![vec![]] }
+    }
+
     /// Builds merkle tree from elements list, hashing them first.
     pub fn build(elements: Vec<String>, hashed: bool) -> Result<Self, MerkleError> {
         if MerkleTree::has_duplicates(&elements){
@@ -52,10 +56,6 @@ impl MerkleTree {
         merkle_tree.tree.push(elements_to_push.clone()); // Push the root node.
 
         Ok(merkle_tree)
-    }
-
-    pub fn new_empty() -> MerkleTree {
-        MerkleTree { tree: vec![vec![]] }
     }
 
     pub fn verify(&self, hash: Hash, proof: Vec<ProofElement>) -> Result<bool, MerkleError> {

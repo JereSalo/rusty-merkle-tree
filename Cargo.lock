@@ -52,12 +52,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "anyhow"
-version = "1.0.87"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "10f00e1f6e58a40e807377c75c6a7f97bf9044fab57816f2414e6f5f4499d7b8"
-
-[[package]]
 name = "block-buffer"
 version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -185,7 +179,6 @@ checksum = "d8adc4bb1803a324070e64a98ae98f38934d91957a99cfb3a43dcbc01bc56439"
 name = "merkle_tree"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "clap",
  "hex",
  "sha2",

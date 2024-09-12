@@ -4,7 +4,8 @@ use std::fmt;
 pub enum MerkleError {
     EmptyList(String),
     NotFound(String),
-    DuplicateElement
+    DuplicateElement,
+    ParsingError(String)
 }
 
 impl fmt::Display for MerkleError {
@@ -16,6 +17,9 @@ impl fmt::Display for MerkleError {
             }
             MerkleError::DuplicateElement => {
                 write!(f, "You can't insert duplicate elements into the tree!")
+            }
+            MerkleError::ParsingError(msg) =>{
+                write!(f, "Proof file parsing error - {}", msg)
             }
         }
     }

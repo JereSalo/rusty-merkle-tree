@@ -1,5 +1,5 @@
-use crate::{merkle_tree::MerkleTree, proof_element::ProofElement, side::Side};
-use anyhow::{Context, Error, Result};
+use crate::{merkle_error::MerkleError, merkle_tree::MerkleTree, proof_element::ProofElement, side::Side};
+// use anyhow::{Context, Error, Result};
 use clap::{Parser, Subcommand};
 use std::{
     fs::File,
@@ -58,15 +58,15 @@ impl Cli {
         }
     }
 
-    pub fn run(&mut self) -> anyhow::Result<()> {
+    pub fn run(&mut self) -> Result<(), io::Error> {
         loop {
             // Display prompt
             print!("tree> ");
-            io::stdout().flush().context("Failed to flush stdout")?; // Flush prompt to the terminal
+            io::stdout().flush()?; // Flush prompt to the terminal
 
             // Read input from the user
             let mut input = String::new();
-            io::stdin().read_line(&mut input).context("Failed to read line")?;
+            io::stdin().read_line(&mut input)?;
 
             // Trim the input and split it into parts
             let input = input.trim();
@@ -100,7 +100,7 @@ impl Cli {
         Ok(())
     }
 
-    fn execute_command(&mut self, command: Commands) -> Result<()> {
+    fn execute_command(&mut self, command: Commands) -> Result<(), MerkleError> {
         match command {
             Commands::Show => {
                 println!("{}", self.mktree);
@@ -138,20 +138,17 @@ impl Cli {
 }
 
 /// Parses the proof file into a list of 'ProofElement's
-fn parse_proof(proof_file: PathBuf) -> Result<Vec<ProofElement>, Error> {
-    let file = File::open(proof_file)?;
+fn parse_proof(proof_file: PathBuf) -> Result<Vec<ProofElement>, MerkleError> {
+    let file = File::open(proof_file).map_err(|e| MerkleError::ParsingError(e.to_string()))?;
     let reader = BufReader::new(file);
 
     let mut proof = Vec::new();
 
     for line in reader.lines() {
-        let line = line?;
+        let line = line.map_err(|e| MerkleError::ParsingError(e.to_string()))?;
         let parts: Vec<&str> = line.split(';').collect();
         if parts.len() != 2 || (parts[1] != "left" && parts[1] != "right") {
-            return Err(anyhow::anyhow!(
-                "ERROR: Invalid proof element format - {}",
-                line
-            ));
+            return Err(MerkleError::ParsingError(format!("Incorrect format in line: {}",line)));
         }
         let hash = parts[0].to_string();
         let side = if parts[1] == "left" {Side::Left} else {Side::Right};
