@@ -2,7 +2,7 @@ use std::fmt;
 
 #[derive(Debug)]
 pub enum MerkleError {
-    EmptyList(String),
+    EmptyTree,
     NotFound(String),
     DuplicateElement,
     ParsingError(String)
@@ -11,9 +11,9 @@ pub enum MerkleError {
 impl fmt::Display for MerkleError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            MerkleError::EmptyList(element) => write!(f, "'{}' list is empty", element),
+            MerkleError::EmptyTree => write!(f, "Error: Tree is empty!"),
             MerkleError::NotFound(element) => {
-                write!(f, "'{}' wasn't found in merkle tree elements", element)
+                write!(f, "'{}' wasn't found in merkle tree", element)
             }
             MerkleError::DuplicateElement => {
                 write!(f, "You can't insert duplicate elements into the tree!")

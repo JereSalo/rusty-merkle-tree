@@ -129,7 +129,7 @@ impl Cli {
             Commands::Build { elements, hashed } => {
                 let custom_message = if !hashed { "hashes of " } else {""};
                 self.mktree = MerkleTree::build(elements.clone(), hashed)?;
-                println!("Tree built with {}elements {:?}", custom_message, &elements);
+                println!("Tree built with {}elements {:?}", custom_message, elements);
             }
         }
         Ok(())
@@ -146,11 +146,11 @@ fn parse_proof(proof_file: PathBuf) -> Result<Vec<ProofElement>, MerkleError> {
     for line in reader.lines() {
         let line = line.map_err(|e| MerkleError::ParsingError(e.to_string()))?;
         let parts: Vec<&str> = line.split(';').collect();
-        if parts.len() != 2 || (parts[1] != "left" && parts[1] != "right") {
+        if parts.len() != 2 || (parts[1].to_lowercase() != "left" && parts[1].to_lowercase() != "right") {
             return Err(MerkleError::ParsingError(format!("Incorrect format in line: {}",line)));
         }
         let hash = parts[0].to_string();
-        let side = if parts[1] == "left" {Side::Left} else {Side::Right};
+        let side = if parts[1].to_lowercase() == "left" {Side::Left} else {Side::Right};
         let proof_elem = ProofElement { hash, side };
         proof.push(proof_elem);
     }
