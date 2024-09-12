@@ -3,7 +3,6 @@ use crate::merkle_error::MerkleError;
 use crate::proof_element::ProofElement;
 use hex;
 use sha2::{Digest, Sha256};
-use core::hash;
 use std::collections::HashSet;
 use std::fmt;
 use std::vec;
@@ -25,46 +24,33 @@ impl fmt::Display for MerkleTree {
 
 impl MerkleTree {
     /// Builds merkle tree from elements list, hashing them first.
-    pub fn build(elements: Vec<String>) -> Result<Self, MerkleError> {
-        let hashed_elements: Vec<Hash> = elements.iter().map(|e| Self::hash(e)).collect();
-
-        Self::build_without_hashing(hashed_elements)
-    }
-
-    pub fn build_without_hashing(hashes: Vec<Hash>) -> Result<Self, MerkleError> {
-        // 1. New merkle tree
-        let mut merkle_tree = MerkleTree { tree: vec![] };
-
-        // Check if there are duplicates
-        if MerkleTree::has_duplicates(&hashes){
+    pub fn build(elements: Vec<String>, hashed: bool) -> Result<Self, MerkleError> {
+        if MerkleTree::has_duplicates(&elements){
             return Err(MerkleError::DuplicateElement);
         }
+        
+        let mut merkle_tree = MerkleTree { tree: vec![] };
 
-        // 2. Push leaf nodes to the tree
-        let mut elements_to_push = hashes;
+        // Hash elements if not hashed
+        let mut elements_to_push = if !hashed {
+            elements.iter().map(|e| Self::hash(e)).collect()
+        }
+        else {
+            elements
+        };
 
-        Self::duplicate_last_if_odd(&mut elements_to_push)?;
-
-        merkle_tree.tree.push(elements_to_push.clone());
-
-        // 3. Calculate upper levels and push them to the tree until root is reached.
+        // Push every level to the tree (cloning last element if necessary) until root is reached.
         while elements_to_push.len() > 1 {
-            elements_to_push = Self::calculate_upper_level(&elements_to_push);
-
-            // This "if" is because the only odd tree level accepted is the root!
-            if elements_to_push.len() > 1 {
-                Self::duplicate_last_if_odd(&mut elements_to_push)?;
-            }
-
+            Self::duplicate_last_if_odd(&mut elements_to_push)?;
+            
             merkle_tree.tree.push(elements_to_push.clone());
+
+            elements_to_push = Self::calculate_upper_level(&elements_to_push);
         }
 
-        Ok(merkle_tree)
-    }
+        merkle_tree.tree.push(elements_to_push.clone()); // Push the root node.
 
-    fn has_duplicates<T: Eq + std::hash::Hash>(vec: &[T]) -> bool {
-        let mut seen = HashSet::new();
-        vec.iter().any(|item| !seen.insert(item))
+        Ok(merkle_tree)
     }
 
     pub fn new_empty() -> MerkleTree {
@@ -129,7 +115,7 @@ impl MerkleTree {
         };
 
         self.tree[0].push(hash);
-        *self = MerkleTree::build_without_hashing(self.tree[0].clone())?; // Rebuilds the tree from scratch, not efficient but Make it Work
+        *self = MerkleTree::build(self.tree[0].clone(), true)?; // Rebuilds the tree from scratch, not efficient but Make it Work
         Ok(())
     }
 
@@ -205,6 +191,12 @@ impl MerkleTree {
             my_index - 1
         }
     }
+
+    /// Checks if exists duplicate elements in a list.
+    fn has_duplicates<T: Eq + std::hash::Hash>(vec: &[T]) -> bool {
+        let mut seen = HashSet::new();
+        vec.iter().any(|item| !seen.insert(item))
+    }
 }
 
 #[cfg(test)]
@@ -218,7 +210,7 @@ mod tests {
         let d = "d".to_string();
         let elements = vec![a, b, c, d];
 
-        MerkleTree::build(elements).unwrap()
+        MerkleTree::build(elements,false).unwrap()
     }
 
     #[test]

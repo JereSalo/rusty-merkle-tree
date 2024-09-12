@@ -126,7 +126,7 @@ impl Cli {
             }
             Commands::Build { elements } => {
                 println!("Tree built with elements {:?}", &elements);
-                self.mktree = MerkleTree::build(elements)?;
+                self.mktree = MerkleTree::build(elements, false)?;
             }
         }
         Ok(())
