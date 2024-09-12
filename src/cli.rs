@@ -1,4 +1,6 @@
-use crate::{merkle_error::MerkleError, merkle_tree::MerkleTree, proof_element::ProofElement, side::Side};
+use crate::{
+    merkle_error::MerkleError, merkle_tree::MerkleTree, proof_element::ProofElement, side::Side,
+};
 // use anyhow::{Context, Error, Result};
 use clap::{Parser, Subcommand};
 use std::{
@@ -24,18 +26,18 @@ enum Commands {
     /// Shows the tree structure
     Show,
     /// Adds an element to the tree, hashing it if -H flag provided
-    Add { 
-        element: String, 
+    Add {
+        element: String,
 
         #[arg(short = 'H', long = "hashed")]
-        hashed: bool, 
+        hashed: bool,
     },
     /// Verifies a proof for a given hash
     Verify { hash: String, proof_file: PathBuf },
     /// Generates a proof for a given hash.
     Proof { hash: String },
     /// Builds a tree with the provided elements, hashing them if -H flag provided.
-    Build { 
+    Build {
         elements: Vec<String>,
 
         #[arg(short = 'H', long = "hashed")]
@@ -105,8 +107,8 @@ impl Cli {
                 println!("{}", self.mktree);
             }
             Commands::Add { element, hashed } => {
-                let custom_message = if !hashed { "hashed and " } else {""};
-                self.mktree.add(element.clone(),hashed)?;
+                let custom_message = if !hashed { "hashed and " } else { "" };
+                self.mktree.add(element.clone(), hashed)?;
                 println!("Element '{}' {}added to the tree", element, custom_message);
             }
             Commands::Verify { hash, proof_file } => {
@@ -124,10 +126,10 @@ impl Cli {
                 println!("Generated proof:");
                 for element in proof {
                     println!("  {} - {}", element.hash, element.side);
-                };
+                }
             }
             Commands::Build { elements, hashed } => {
-                let custom_message = if !hashed { "hashes of " } else {""};
+                let custom_message = if !hashed { "hashes of " } else { "" };
                 self.mktree = MerkleTree::build(elements.clone(), hashed)?;
                 println!("Tree built with {}elements {:?}", custom_message, elements);
             }
@@ -146,11 +148,20 @@ fn parse_proof(proof_file: PathBuf) -> Result<Vec<ProofElement>, MerkleError> {
     for line in reader.lines() {
         let line = line.map_err(|e| MerkleError::ParsingError(e.to_string()))?;
         let parts: Vec<&str> = line.split(';').collect();
-        if parts.len() != 2 || (parts[1].to_lowercase() != "left" && parts[1].to_lowercase() != "right") {
-            return Err(MerkleError::ParsingError(format!("Incorrect format in line: {}",line)));
+        if parts.len() != 2
+            || (parts[1].to_lowercase() != "left" && parts[1].to_lowercase() != "right")
+        {
+            return Err(MerkleError::ParsingError(format!(
+                "Incorrect format in line: {}",
+                line
+            )));
         }
         let hash = parts[0].to_string();
-        let side = if parts[1].to_lowercase() == "left" {Side::Left} else {Side::Right};
+        let side = if parts[1].to_lowercase() == "left" {
+            Side::Left
+        } else {
+            Side::Right
+        };
         let proof_elem = ProofElement { hash, side };
         proof.push(proof_elem);
     }

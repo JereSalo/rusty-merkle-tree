@@ -5,7 +5,7 @@ pub enum MerkleError {
     EmptyTree,
     NotFound(String),
     DuplicateElement,
-    ParsingError(String)
+    ParsingError(String),
 }
 
 impl fmt::Display for MerkleError {
@@ -18,7 +18,7 @@ impl fmt::Display for MerkleError {
             MerkleError::DuplicateElement => {
                 write!(f, "You can't insert duplicate elements into the tree!")
             }
-            MerkleError::ParsingError(msg) =>{
+            MerkleError::ParsingError(msg) => {
                 write!(f, "Proof file error - {}", msg)
             }
         }

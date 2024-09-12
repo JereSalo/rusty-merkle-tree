@@ -10,8 +10,7 @@ impl ProofElement {
     pub fn new_from_index(hash: String, index: usize) -> Self {
         let side = if index % 2 == 0 {
             Side::Left
-        } 
-        else {
+        } else {
             Side::Right
         };
 

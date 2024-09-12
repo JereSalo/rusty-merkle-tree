@@ -3,7 +3,7 @@ use std::fmt;
 #[derive(Debug, PartialEq, Clone)]
 pub enum Side {
     Left,
-    Right
+    Right,
 }
 
 impl fmt::Display for Side {

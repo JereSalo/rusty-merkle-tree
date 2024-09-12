@@ -1,7 +1,7 @@
-use crate::{hash::Hash,merkle_error::MerkleError,proof_element::ProofElement,side::Side};
+use crate::{hash::Hash, merkle_error::MerkleError, proof_element::ProofElement, side::Side};
 use hex;
 use sha2::{Digest, Sha256};
-use std::{collections::HashSet,fmt,vec};
+use std::{collections::HashSet, fmt, vec};
 
 #[derive(Debug, PartialEq, Default)]
 pub struct MerkleTree {
@@ -25,24 +25,23 @@ impl MerkleTree {
 
     /// Builds merkle tree from elements list, hashing them first.
     pub fn build(elements: Vec<String>, hashed: bool) -> Result<Self, MerkleError> {
-        if has_duplicates(&elements){
+        if has_duplicates(&elements) {
             return Err(MerkleError::DuplicateElement);
         }
-        
+
         let mut merkle_tree = MerkleTree { tree: vec![] };
 
         // Hash elements if not hashed
         let mut elements_to_push = if !hashed {
             elements.iter().map(|e| Self::hash(e)).collect()
-        }
-        else {
+        } else {
             elements
         };
 
         // Push every level to the tree (cloning last element if necessary) until root is reached.
         while elements_to_push.len() > 1 {
             Self::duplicate_last_if_odd(&mut elements_to_push);
-            
+
             merkle_tree.tree.push(elements_to_push.clone());
 
             elements_to_push = Self::calculate_upper_level(&elements_to_push);
@@ -89,13 +88,13 @@ impl MerkleTree {
     }
 
     /// Adds an element/hash to the merkle tree, if 'hashed' is false it hashes it, otherwise it only adds it to the tree
-    pub fn add(&mut self, element:String, hashed:bool) -> Result<(), MerkleError>{
+    pub fn add(&mut self, element: String, hashed: bool) -> Result<(), MerkleError> {
         let hash = if hashed {
             element
         } else {
             Self::hash(&element)
         };
-        
+
         // Not allowing to insert an element that's already in the tree.
         if self.tree[0].contains(&hash) {
             return Err(MerkleError::DuplicateElement);
@@ -103,7 +102,7 @@ impl MerkleTree {
 
         // If last 2 elements are equal, the last one is a clone.
         if let Some((last, all_but_last)) = self.tree[0].split_last() {
-            let second_to_last =  all_but_last.last();
+            let second_to_last = all_but_last.last();
             if second_to_last == Some(last) {
                 self.tree[0].pop();
             }
@@ -192,9 +191,14 @@ mod tests {
     use super::*;
 
     fn build_basic_tree() -> MerkleTree {
-        let elements = vec!["a".to_string(), "b".to_string(), "c".to_string(), "d".to_string()];
+        let elements = vec![
+            "a".to_string(),
+            "b".to_string(),
+            "c".to_string(),
+            "d".to_string(),
+        ];
 
-        MerkleTree::build(elements,false).unwrap()
+        MerkleTree::build(elements, false).unwrap()
     }
 
     #[test]
@@ -327,7 +331,10 @@ mod tests {
         let expected_tree = build_basic_tree();
         let mut mktree = MerkleTree { tree: vec![vec![]] };
 
-        mktree.add("ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb".to_string(), true)?; // hash of 'a'
+        mktree.add(
+            "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb".to_string(),
+            true,
+        )?; // hash of 'a'
         mktree.add("b".to_string(), false)?;
         mktree.add("c".to_string(), false)?;
         mktree.add("d".to_string(), false)?;
