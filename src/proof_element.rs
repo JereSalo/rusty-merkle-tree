@@ -1,13 +1,20 @@
+use crate::side::Side;
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct ProofElement {
     pub hash: String,
-    pub left: bool,
+    pub side: Side,
 }
 
 impl ProofElement {
     pub fn new_from_index(hash: String, index: usize) -> Self {
-        let left = index % 2 == 0;
+        let side = if index % 2 == 0 {
+            Side::Left
+        } 
+        else {
+            Side::Right
+        };
 
-        ProofElement { hash, left }
+        ProofElement { hash, side }
     }
 }

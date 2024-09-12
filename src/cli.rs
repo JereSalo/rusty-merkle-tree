@@ -1,4 +1,4 @@
-use crate::{merkle_tree::MerkleTree, proof_element::ProofElement};
+use crate::{merkle_tree::MerkleTree, proof_element::ProofElement, side::Side};
 use anyhow::{Error, Result};
 use clap::{Parser, Subcommand};
 use std::{
@@ -124,10 +124,8 @@ impl Cli {
                 let proof = self.mktree.gen_proof(hash.clone())?;
                 println!("Generated proof:");
                 for element in proof {
-                    let hash = element.hash;
-                    let position = if element.left { "left" } else { "right" };
-                    println!("  {} - {}", hash, position);
-                }
+                    println!("  {} - {}", element.hash, element.side);
+                };
             }
             Commands::Build { elements, hashed } => {
                 let custom_message = if !hashed { "hashes of " } else {""};
@@ -156,8 +154,8 @@ fn parse_proof(proof_file: PathBuf) -> Result<Vec<ProofElement>, Error> {
             ));
         }
         let hash = parts[0].to_string();
-        let left = parts[1] == "left";
-        let proof_elem = ProofElement { hash, left };
+        let side = if parts[1] == "left" {Side::Left} else {Side::Right};
+        let proof_elem = ProofElement { hash, side };
         proof.push(proof_elem);
     }
 

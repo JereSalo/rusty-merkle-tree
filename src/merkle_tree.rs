@@ -1,6 +1,7 @@
 use crate::hash::Hash;
 use crate::merkle_error::MerkleError;
 use crate::proof_element::ProofElement;
+use crate::side::Side;
 use hex;
 use sha2::{Digest, Sha256};
 use std::collections::HashSet;
@@ -60,7 +61,7 @@ impl MerkleTree {
     pub fn verify(&self, hash: Hash, proof: Vec<ProofElement>) -> Result<bool, MerkleError> {
         // Calculates root with element hash (leaf node) and it's proof
         let calc_root = proof.iter().fold(hash, |cur_hash, partner| {
-            let combined_hashes = if partner.left {
+            let combined_hashes = if partner.side == Side::Left {
                 partner.hash.clone() + &cur_hash
             } else {
                 cur_hash + &partner.hash
@@ -272,12 +273,12 @@ mod tests {
             ProofElement {
                 hash: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4"
                     .to_string(),
-                left: false,
+                side: Side::Right,
             },
             ProofElement {
                 hash: "62af5c3cb8da3e4f25061e829ebeea5c7513c54949115b1acc225930a90154da"
                     .to_string(),
-                left: true,
+                side: Side::Left,
             },
         ]
         .to_vec();
@@ -297,12 +298,12 @@ mod tests {
             ProofElement {
                 hash: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4"
                     .to_string(),
-                left: false,
+                side: Side::Right,
             },
             ProofElement {
                 hash: "62af5c3cb8da3e4f25061e829ebeea5c7513c54949115b1acc225930a90154da"
                     .to_string(),
-                left: true,
+                side: Side::Left,
             },
         ]
         .to_vec();
@@ -321,14 +322,14 @@ mod tests {
         // WRONG PROOF FOR THIS ELEMENT
         let proof = [
             ProofElement {
-                hash: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4"
+                hash: "18ac3e7343f016890c51ThisIsNotTheRightProof436429830faf0934f4f8e4"
                     .to_string(),
-                left: false,
+                side: Side::Right,
             },
             ProofElement {
-                hash: "62af5c3cb8da3e4f25061JEREebeea5c7513c54949115b1acc225930a90154da"
+                hash: "62af5c3cb8da3e4f25061esJEREeea5c7513c54949115b1acc225930a90154da"
                     .to_string(),
-                left: true,
+                side: Side::Left,
             },
         ]
         .to_vec();
