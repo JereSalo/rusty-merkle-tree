@@ -25,7 +25,12 @@ enum Commands {
     /// Shows the tree structure
     Show,
     /// Adds an element to the tree
-    Add { element: String },
+    Add { 
+        element: String, 
+
+        #[arg(short = 'H', long = "hashed")]
+        hashed: bool, 
+    },
     /// Verifies a proof for a given hash
     Verify { hash: String, proof_file: PathBuf },
     /// Generates a proof for a given hash.
@@ -95,9 +100,10 @@ impl Cli {
             Commands::Show => {
                 println!("{}", self.mktree);
             }
-            Commands::Add { element } => {
-                println!("Element '{}' hashed and added to the tree", element);
-                self.mktree.add_element(element)?;
+            Commands::Add { element, hashed } => {
+                let custom_message = if !hashed { "hashed and " } else {""};
+                println!("Element '{}' {}added to the tree", element, custom_message);
+                self.mktree.add(element,hashed)?;
             }
             Commands::Verify { hash, proof_file } => {
                 let proof = parse_proof(proof_file)?;

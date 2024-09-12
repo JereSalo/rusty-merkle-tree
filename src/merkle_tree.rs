@@ -95,19 +95,23 @@ impl MerkleTree {
         Ok(proof)
     }
 
-    /// Hashes element and adds it to the merkle tree.  
-    /// In this implementation tree is built from scratch.
-    pub fn add_element(&mut self, element: String) -> Result<(), MerkleError> {
-        // If last 2 elements are equal then remove the last one because it is a clone.
+    /// Adds an element/hash to the merkle tree, if hashed is false it hashes it, otherwise it only adds it to the tree
+    pub fn add(&mut self, element:String, hashed:bool) -> Result<(), MerkleError>{
+        // If last 2 elements are equal, the last one is a clone.
         if let Some((last, second_to_last)) = self.tree[0].split_last() {
             if second_to_last.last() == Some(last) {
                 self.tree[0].pop();
             }
-        }
+        };
 
-        let hashed_element = Self::hash(&element);
-        self.tree[0].push(hashed_element);
+        // Going to assume the user will use this correctly
+        let hash = if hashed {
+            element
+        } else {
+            Self::hash(&element)
+        };
 
+        self.tree[0].push(hash);
         *self = MerkleTree::build_without_hashing(self.tree[0].clone())?; // Rebuilds the tree from scratch, not efficient but Make it Work
         Ok(())
     }
@@ -330,10 +334,10 @@ mod tests {
         let expected_tree = build_basic_tree();
         let mut mktree = MerkleTree { tree: vec![vec![]] };
 
-        mktree.add_element("a".to_string())?;
-        mktree.add_element("b".to_string())?;
-        mktree.add_element("c".to_string())?;
-        mktree.add_element("d".to_string())?;
+        mktree.add("ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb".to_string(), true)?; // hash of 'a'
+        mktree.add("b".to_string(), false)?;
+        mktree.add("c".to_string(), false)?;
+        mktree.add("d".to_string(), false)?;
 
         assert_eq!(mktree, expected_tree);
         Ok(())
