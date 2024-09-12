@@ -15,7 +15,6 @@ pub struct Cli {
     #[command(subcommand)]
     command: Commands,
 
-    /// Merkle tree instance to hold the state
     #[arg(skip)]
     mktree: MerkleTree,
 }
@@ -24,7 +23,7 @@ pub struct Cli {
 enum Commands {
     /// Shows the tree structure
     Show,
-    /// Adds an element to the tree
+    /// Adds an element to the tree, hashing it if -H flag provided
     Add { 
         element: String, 
 
@@ -35,7 +34,7 @@ enum Commands {
     Verify { hash: String, proof_file: PathBuf },
     /// Generates a proof for a given hash.
     Proof { hash: String },
-    /// Builds a tree with the provided elements.
+    /// Builds a tree with the provided elements, hashing them if -H flag provided.
     Build { 
         elements: Vec<String>,
 
@@ -91,9 +90,9 @@ impl Cli {
                 }
             };
 
-            // Execute the command and handle any errors
+            // Execute the command, print errors if any and continue.
             if let Err(e) = self.execute_command(command) {
-                println!("Error: {}", e);
+                println!("{}", e);
             }
         }
 

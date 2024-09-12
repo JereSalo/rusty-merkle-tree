@@ -13,13 +13,13 @@ impl fmt::Display for MerkleError {
         match self {
             MerkleError::EmptyList(element) => write!(f, "'{}' list is empty", element),
             MerkleError::NotFound(element) => {
-                write!(f, "'{}' wasn't found in merkle tree", element)
+                write!(f, "'{}' wasn't found in merkle tree elements", element)
             }
             MerkleError::DuplicateElement => {
                 write!(f, "You can't insert duplicate elements into the tree!")
             }
             MerkleError::ParsingError(msg) =>{
-                write!(f, "Proof file parsing error - {}", msg)
+                write!(f, "Proof file error - {}", msg)
             }
         }
     }

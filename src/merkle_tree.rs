@@ -1,12 +1,7 @@
-use crate::hash::Hash;
-use crate::merkle_error::MerkleError;
-use crate::proof_element::ProofElement;
-use crate::side::Side;
+use crate::{hash::Hash,merkle_error::MerkleError,proof_element::ProofElement,side::Side};
 use hex;
 use sha2::{Digest, Sha256};
-use std::collections::HashSet;
-use std::fmt;
-use std::vec;
+use std::{collections::HashSet,fmt,vec};
 
 #[derive(Debug, PartialEq, Default)]
 pub struct MerkleTree {
@@ -30,7 +25,7 @@ impl MerkleTree {
 
     /// Builds merkle tree from elements list, hashing them first.
     pub fn build(elements: Vec<String>, hashed: bool) -> Result<Self, MerkleError> {
-        if MerkleTree::has_duplicates(&elements){
+        if has_duplicates(&elements){
             return Err(MerkleError::DuplicateElement);
         }
         
@@ -192,12 +187,12 @@ impl MerkleTree {
             my_index - 1
         }
     }
+}
 
-    /// Checks if exists duplicate elements in a list.
-    fn has_duplicates<T: Eq + std::hash::Hash>(vec: &[T]) -> bool {
-        let mut seen = HashSet::new();
-        vec.iter().any(|item| !seen.insert(item))
-    }
+/// Checks for duplicate elements in a list
+fn has_duplicates<T: Eq + std::hash::Hash>(vec: &[T]) -> bool {
+    let mut seen = HashSet::new();
+    vec.iter().any(|item| !seen.insert(item))
 }
 
 #[cfg(test)]
