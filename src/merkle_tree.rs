@@ -3,6 +3,8 @@ use crate::merkle_error::MerkleError;
 use crate::proof_element::ProofElement;
 use hex;
 use sha2::{Digest, Sha256};
+use core::hash;
+use std::collections::HashSet;
 use std::fmt;
 use std::vec;
 
@@ -33,6 +35,11 @@ impl MerkleTree {
         // 1. New merkle tree
         let mut merkle_tree = MerkleTree { tree: vec![] };
 
+        // Check if there are duplicates
+        if MerkleTree::has_duplicates(&hashes){
+            return Err(MerkleError::DuplicateElement);
+        }
+
         // 2. Push leaf nodes to the tree
         let mut elements_to_push = hashes;
 
@@ -53,6 +60,11 @@ impl MerkleTree {
         }
 
         Ok(merkle_tree)
+    }
+
+    fn has_duplicates<T: Eq + std::hash::Hash>(vec: &[T]) -> bool {
+        let mut seen = HashSet::new();
+        vec.iter().any(|item| !seen.insert(item))
     }
 
     pub fn new_empty() -> MerkleTree {

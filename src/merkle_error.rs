@@ -15,7 +15,7 @@ impl fmt::Display for MerkleError {
                 write!(f, "'{}' wasn't found in merkle tree", element)
             }
             MerkleError::DuplicateElement => {
-                write!(f, "Element is already in merkle tree!")
+                write!(f, "You can't insert duplicate elements into the tree!")
             }
         }
     }

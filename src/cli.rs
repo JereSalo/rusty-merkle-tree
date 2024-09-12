@@ -102,8 +102,8 @@ impl Cli {
             }
             Commands::Add { element, hashed } => {
                 let custom_message = if !hashed { "hashed and " } else {""};
+                self.mktree.add(element.clone(),hashed)?;
                 println!("Element '{}' {}added to the tree", element, custom_message);
-                self.mktree.add(element,hashed)?;
             }
             Commands::Verify { hash, proof_file } => {
                 let proof = parse_proof(proof_file)?;
