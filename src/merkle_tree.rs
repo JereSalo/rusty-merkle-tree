@@ -97,18 +97,23 @@ impl MerkleTree {
 
     /// Adds an element/hash to the merkle tree, if hashed is false it hashes it, otherwise it only adds it to the tree
     pub fn add(&mut self, element:String, hashed:bool) -> Result<(), MerkleError>{
-        // If last 2 elements are equal, the last one is a clone.
-        if let Some((last, second_to_last)) = self.tree[0].split_last() {
-            if second_to_last.last() == Some(last) {
-                self.tree[0].pop();
-            }
-        };
-
         // Going to assume the user will use this correctly
         let hash = if hashed {
             element
         } else {
             Self::hash(&element)
+        };
+        
+        // If hash is already in the tree return MerkleError::DuplicateElement
+        if self.tree[0].contains(&hash) {
+            return Err(MerkleError::DuplicateElement);
+        }
+
+        // If last 2 elements are equal, the last one is a clone.
+        if let Some((last, second_to_last)) = self.tree[0].split_last() {
+            if second_to_last.last() == Some(last) {
+                self.tree[0].pop();
+            }
         };
 
         self.tree[0].push(hash);
