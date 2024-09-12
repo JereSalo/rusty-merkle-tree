@@ -36,7 +36,12 @@ enum Commands {
     /// Generates a proof for a given hash.
     Proof { hash: String },
     /// Builds a tree with the provided elements.
-    Build { elements: Vec<String> },
+    Build { 
+        elements: Vec<String>,
+
+        #[arg(short = 'H', long = "hashed")]
+        hashed: bool,
+    },
 }
 
 impl Default for Cli {
@@ -124,9 +129,10 @@ impl Cli {
                     println!("  {} - {}", hash, position);
                 }
             }
-            Commands::Build { elements } => {
-                println!("Tree built with elements {:?}", &elements);
-                self.mktree = MerkleTree::build(elements, false)?;
+            Commands::Build { elements, hashed } => {
+                let custom_message = if !hashed { "hashes of " } else {""};
+                self.mktree = MerkleTree::build(elements.clone(), hashed)?;
+                println!("Tree built with {}elements {:?}", custom_message, &elements);
             }
         }
         Ok(())
