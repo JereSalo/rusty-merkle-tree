@@ -1,3 +1,8 @@
-// use merkle_tree::merkle_tree::MerkleTree;
+use std::io;
 
-fn main() {}
+use merkle_tree::cli;
+
+fn main() -> Result<(), io::Error> {
+    let mut cli = cli::Cli::new();
+    cli.run()
+}

@@ -1,63 +1,66 @@
-use crate::hash::Hash;
-use crate::merkle_error::MerkleError;
-use crate::proof_element::ProofElement;
+use crate::{hash::Hash, merkle_error::MerkleError, proof_element::ProofElement, side::Side};
 use hex;
 use sha2::{Digest, Sha256};
-use std::vec;
+use std::{collections::HashSet, fmt, vec};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Default)]
 pub struct MerkleTree {
     tree: Vec<Vec<Hash>>,
 }
 
-impl MerkleTree {
-    /// Builds merkle tree from elements list, hashing them first.
-    pub fn build(elements: Vec<String>) -> Result<Self, MerkleError> {
-        let hashed_elements: Vec<Hash> = elements.iter().map(|e| Self::hash(e)).collect();
-
-        Self::build_without_hashing(hashed_elements)
-    }
-
-    pub fn build_without_hashing(hashes: Vec<Hash>) -> Result<Self, MerkleError> {
-        // 1. New merkle tree
-        let mut merkle_tree = MerkleTree { tree: vec![] };
-
-        // 2. Push leaf nodes to the tree
-        let mut elements_to_push = hashes;
-
-        Self::duplicate_last_if_odd(&mut elements_to_push)?;
-
-        merkle_tree.tree.push(elements_to_push.clone());
-
-        // 3. Calculate upper levels and push them to the tree until root is reached.
-        while elements_to_push.len() > 1 {
-            elements_to_push = Self::calculate_upper_level(&elements_to_push);
-
-            // This "if" is because the only odd tree level accepted is the root!
-            if elements_to_push.len() > 1 {
-                Self::duplicate_last_if_odd(&mut elements_to_push)?;
-            }
-
-            merkle_tree.tree.push(elements_to_push.clone());
+impl fmt::Display for MerkleTree {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // Reverse the tree levels for printing, starting with the root node.
+        for (level, nodes) in self.tree.iter().rev().enumerate() {
+            writeln!(f, "Level {}:\n  {}", level, nodes.join("\n  "))?;
         }
-
-        Ok(merkle_tree)
+        Ok(())
     }
+}
 
+impl MerkleTree {
     pub fn new_empty() -> MerkleTree {
         MerkleTree { tree: vec![vec![]] }
+    }
+
+    /// Builds merkle tree from elements list, hashing them first.
+    pub fn build(elements: Vec<String>, hashed: bool) -> Result<Self, MerkleError> {
+        if has_duplicates(&elements) {
+            return Err(MerkleError::DuplicateElement);
+        }
+
+        let mut merkle_tree = MerkleTree { tree: vec![] };
+
+        // Hash elements if not hashed
+        let mut elements_to_push = if !hashed {
+            elements.iter().map(|e| Self::hash(e)).collect()
+        } else {
+            elements
+        };
+
+        // Push every level to the tree (cloning last element if necessary) until root is reached.
+        while elements_to_push.len() > 1 {
+            Self::duplicate_last_if_odd(&mut elements_to_push);
+
+            merkle_tree.tree.push(elements_to_push.clone());
+
+            elements_to_push = Self::calculate_upper_level(&elements_to_push);
+        }
+
+        merkle_tree.tree.push(elements_to_push.clone()); // Push the root node.
+
+        Ok(merkle_tree)
     }
 
     pub fn verify(&self, hash: Hash, proof: Vec<ProofElement>) -> Result<bool, MerkleError> {
         // Calculates root with element hash (leaf node) and it's proof
         let calc_root = proof.iter().fold(hash, |cur_hash, partner| {
-            let combined_hashes = if partner.left {
-                partner.hash.clone() + &cur_hash
+            let combined_hash = if partner.side == Side::Left {
+                format!("{}{}", partner.hash, cur_hash)
             } else {
-                cur_hash + &partner.hash
+                format!("{}{}", cur_hash, partner.hash)
             };
-
-            MerkleTree::hash(&combined_hashes)
+            MerkleTree::hash(&combined_hash)
         });
 
         let real_root = self.get_root()?;
@@ -79,25 +82,34 @@ impl MerkleTree {
                 ProofElement::new_from_index(self.tree[level][i_partner].clone(), i_partner);
             proof.push(proof_elem);
             level += 1;
-            i /= 2;
+            i /= 2; // Next level will have half the nodes
         }
         Ok(proof)
     }
 
-    /// Hashes element and adds it to the merkle tree.  
-    /// In this implementation tree is built from scratch.
-    pub fn add_element(&mut self, element: String) -> Result<(), MerkleError> {
-        // If last 2 elements are equal then remove the last one because it is a clone.
-        if let Some((last, second_to_last)) = self.tree[0].split_last() {
-            if second_to_last.last() == Some(last) {
-                self.tree[0].pop();
-            }
+    /// Adds an element/hash to the merkle tree, if 'hashed' is false it hashes it, otherwise it only adds it to the tree
+    pub fn add(&mut self, element: String, hashed: bool) -> Result<(), MerkleError> {
+        let hash = if hashed {
+            element
+        } else {
+            Self::hash(&element)
+        };
+
+        // Not allowing to insert an element that's already in the tree.
+        if self.tree[0].contains(&hash) {
+            return Err(MerkleError::DuplicateElement);
         }
 
-        let hashed_element = Self::hash(&element);
-        self.tree[0].push(hashed_element);
+        // If last 2 elements are equal, the last one is a clone.
+        if let Some((last, all_but_last)) = self.tree[0].split_last() {
+            let second_to_last = all_but_last.last();
+            if second_to_last == Some(last) {
+                self.tree[0].pop();
+            }
+        };
 
-        *self = MerkleTree::build_without_hashing(self.tree[0].clone())?; // Rebuilds the tree from scratch, not efficient but Make it Work
+        self.tree[0].push(hash);
+        *self = MerkleTree::build(self.tree[0].clone(), true)?; // Rebuilds the tree from scratch, not efficient but Make it Work
         Ok(())
     }
 
@@ -108,10 +120,10 @@ impl MerkleTree {
         let mut next_level: Vec<Hash> = vec![];
 
         // Iterate list and calculate hashes
-        for (i, s_left) in actual_level.iter().enumerate().step_by(2) {
-            let s_right = &actual_level[i + 1];
+        for (i, left_hash) in actual_level.iter().enumerate().step_by(2) {
+            let right_hash = &actual_level[i + 1];
 
-            let combined_hashes = format!("{}{}", s_left, s_right);
+            let combined_hashes = format!("{}{}", left_hash, right_hash);
 
             let result_hash = Self::hash(&combined_hashes);
             next_level.push(result_hash);
@@ -133,36 +145,29 @@ impl MerkleTree {
         let root = self
             .tree
             .last()
-            .ok_or(MerkleError::EmptyList("tree".to_string()))?
+            .ok_or(MerkleError::EmptyTree)?
             .first()
-            .ok_or(MerkleError::EmptyList("root".to_string()))?;
+            .ok_or(MerkleError::EmptyTree)?;
         Ok(root)
     }
 
     /// Duplicates last element if level of tree is odd, so that it becomes even. Auxiliary function for build method.
-    fn duplicate_last_if_odd(elements: &mut Vec<Hash>) -> Result<(), MerkleError> {
+    fn duplicate_last_if_odd(elements: &mut Vec<Hash>) {
         if elements.len() % 2 != 0 {
             let last = elements
                 .last()
-                .ok_or(MerkleError::EmptyList("elements".to_string()))?
+                .unwrap() // I use unwrap here because by design this won't be executed on an empty list.
                 .clone();
             elements.push(last);
         }
-        Ok(())
     }
 
     /// Tries to find the index of a given hash. Returns error if not found.
     fn find_hash_index(&self, hash: Hash) -> Result<usize, MerkleError> {
-        let mut i: Option<usize> = None; // Option because it's not guaranteed that i is going to be assigned a value.
-
-        for (index, element) in self.tree[0].iter().enumerate() {
-            if *element == hash {
-                i = Some(index);
-                break;
-            }
-        }
-
-        i.ok_or(MerkleError::NotFound(hash))
+        self.tree[0]
+            .iter()
+            .position(|element| *element == hash)
+            .ok_or(MerkleError::NotFound(hash))
     }
 
     /// Given an element's index, gets it's partner's index.
@@ -175,18 +180,25 @@ impl MerkleTree {
     }
 }
 
+/// Checks for duplicate strings in a list
+fn has_duplicates(vec: &[String]) -> bool {
+    let mut seen = HashSet::new();
+    vec.iter().any(|item| !seen.insert(item))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     fn build_basic_tree() -> MerkleTree {
-        let a = "a".to_string();
-        let b = "b".to_string();
-        let c = "c".to_string();
-        let d = "d".to_string();
-        let elements = vec![a, b, c, d];
+        let elements = vec![
+            "a".to_string(),
+            "b".to_string(),
+            "c".to_string(),
+            "d".to_string(),
+        ];
 
-        MerkleTree::build(elements).unwrap()
+        MerkleTree::build(elements, false).unwrap()
     }
 
     #[test]
@@ -244,41 +256,41 @@ mod tests {
         let mktree = build_basic_tree();
 
         let hash = "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6".to_string();
-        let proof = [
+        let expected_proof = [
             ProofElement {
                 hash: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4"
                     .to_string(),
-                left: false,
+                side: Side::Right,
             },
             ProofElement {
                 hash: "62af5c3cb8da3e4f25061e829ebeea5c7513c54949115b1acc225930a90154da"
                     .to_string(),
-                left: true,
+                side: Side::Left,
             },
         ]
         .to_vec();
 
         let generated_proof = mktree.gen_proof(hash).unwrap();
 
-        assert_eq!(proof, generated_proof);
+        assert_eq!(expected_proof, generated_proof);
     }
 
     #[test]
     fn verify_proof_true() {
         let mktree = build_basic_tree();
 
-        // Provided the right proof for a tree return true.
+        // Provided the right proof for a tree hash, calculate and return true.
         let hash = "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6".to_string();
         let proof = [
             ProofElement {
                 hash: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4"
                     .to_string(),
-                left: false,
+                side: Side::Right,
             },
             ProofElement {
                 hash: "62af5c3cb8da3e4f25061e829ebeea5c7513c54949115b1acc225930a90154da"
                     .to_string(),
-                left: true,
+                side: Side::Left,
             },
         ]
         .to_vec();
@@ -292,19 +304,19 @@ mod tests {
     fn verify_proof_false() {
         let mktree = build_basic_tree();
 
-        // Provided the wrong proof for a tree return false.
+        // Provided the wrong proof for a tree hash, calculate and return false.
         let hash = "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6".to_string();
         // WRONG PROOF FOR THIS ELEMENT
         let proof = [
             ProofElement {
-                hash: "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4"
+                hash: "18ac3e7343f016890c51ThisIsNotTheRightProof436429830faf0934f4f8e4"
                     .to_string(),
-                left: false,
+                side: Side::Right,
             },
             ProofElement {
-                hash: "62af5c3cb8da3e4f25061JEREebeea5c7513c54949115b1acc225930a90154da"
+                hash: "62af5c3cb8da3e4f25061esJEREeea5c7513c54949115b1acc225930a90154da"
                     .to_string(),
-                left: true,
+                side: Side::Left,
             },
         ]
         .to_vec();
@@ -319,10 +331,13 @@ mod tests {
         let expected_tree = build_basic_tree();
         let mut mktree = MerkleTree { tree: vec![vec![]] };
 
-        mktree.add_element("a".to_string())?;
-        mktree.add_element("b".to_string())?;
-        mktree.add_element("c".to_string())?;
-        mktree.add_element("d".to_string())?;
+        mktree.add(
+            "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb".to_string(),
+            true,
+        )?; // hash of 'a'
+        mktree.add("b".to_string(), false)?;
+        mktree.add("c".to_string(), false)?;
+        mktree.add("d".to_string(), false)?;
 
         assert_eq!(mktree, expected_tree);
         Ok(())
