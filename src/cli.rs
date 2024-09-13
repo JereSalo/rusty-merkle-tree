@@ -1,7 +1,6 @@
 use crate::{
     merkle_error::MerkleError, merkle_tree::MerkleTree, proof_element::ProofElement, side::Side,
 };
-// use anyhow::{Context, Error, Result};
 use clap::{Parser, Subcommand};
 use std::{
     fs::File,

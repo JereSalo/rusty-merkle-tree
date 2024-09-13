@@ -1,8 +1,8 @@
-use crate::side::Side;
+use crate::{hash::Hash, side::Side};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ProofElement {
-    pub hash: String,
+    pub hash: Hash,
     pub side: Side,
 }
 
