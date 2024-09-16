@@ -164,7 +164,8 @@ impl MerkleTree {
 
     /// Tries to find the index of a given hash. Returns error if not found.
     fn find_hash_index(&self, hash: Hash) -> Result<usize, MerkleError> {
-        self.tree[0]
+        self.tree.get(0)
+            .ok_or(MerkleError::EmptyTree)?
             .iter()
             .position(|element| *element == hash)
             .ok_or(MerkleError::NotFound(hash))
