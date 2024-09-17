@@ -23,7 +23,7 @@ impl MerkleTree {
         MerkleTree { tree: vec![vec![]] }
     }
 
-    /// Builds merkle tree from elements list, hashing them first.
+    /// Builds merkle tree from elements list, hashing them first if specified. Hashing can be skipped if user wants to build a tree with hashes directly instead of elements.
     pub fn build(elements: Vec<String>, hashed: bool) -> Result<Self, MerkleError> {
         if has_duplicates(&elements) {
             return Err(MerkleError::DuplicateElement);
