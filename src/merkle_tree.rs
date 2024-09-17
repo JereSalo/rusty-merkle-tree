@@ -1,11 +1,11 @@
-use crate::{hash::Hash, merkle_error::MerkleError, proof_element::ProofElement, side::Side};
+use crate::{merkle_error::MerkleError, proof_element::ProofElement, side::Side};
 use hex;
 use sha2::{Digest, Sha256};
 use std::{collections::HashSet, fmt, vec};
 
 #[derive(Debug, PartialEq, Default)]
 pub struct MerkleTree {
-    tree: Vec<Vec<Hash>>,
+    tree: Vec<Vec<String>>,
 }
 
 impl fmt::Display for MerkleTree {
@@ -52,7 +52,7 @@ impl MerkleTree {
         Ok(merkle_tree)
     }
 
-    pub fn verify(&self, hash: Hash, proof: Vec<ProofElement>) -> Result<bool, MerkleError> {
+    pub fn verify(&self, hash: String, proof: Vec<ProofElement>) -> Result<bool, MerkleError> {
         // Calculates root with element hash (leaf node) and it's proof
         let calc_root = proof.iter().fold(hash, |cur_hash, partner| {
             let combined_hash = if partner.side == Side::Left {
@@ -68,7 +68,7 @@ impl MerkleTree {
         Ok(calc_root == *real_root)
     }
 
-    pub fn gen_proof(&self, hash: Hash) -> Result<Vec<ProofElement>, MerkleError> {
+    pub fn gen_proof(&self, hash: String) -> Result<Vec<ProofElement>, MerkleError> {
         let mut proof: Vec<ProofElement> = vec![];
 
         // 1. Find index of given hash in leaves.
@@ -116,8 +116,8 @@ impl MerkleTree {
     /// Given a level N of the tree it calculates and returns the upper level of it.
     /// > Note: Case of level with odd quantity of elements is not considered because
     /// > Merkle Tree always has an even quantity of elements (last one duplicated if necessary)
-    fn calculate_upper_level(actual_level: &[Hash]) -> Vec<Hash> {
-        let mut next_level: Vec<Hash> = vec![];
+    fn calculate_upper_level(actual_level: &[String]) -> Vec<String> {
+        let mut next_level: Vec<String> = vec![];
 
         // Iterate list and calculate hashes
         for (i, left_hash) in actual_level.iter().enumerate().step_by(2) {
@@ -133,7 +133,7 @@ impl MerkleTree {
     }
 
     /// Returns SHA256 of a given element.
-    fn hash(element: &str) -> Hash {
+    fn hash(element: &str) -> String {
         let mut hasher = Sha256::new();
         hasher.update(element);
         let result = hasher.finalize();
@@ -141,7 +141,7 @@ impl MerkleTree {
     }
 
     /// If tree is not empty, returns it's root hash.
-    fn get_root(&self) -> Result<&Hash, MerkleError> {
+    fn get_root(&self) -> Result<&String, MerkleError> {
         let root = self
             .tree
             .last()
@@ -152,7 +152,7 @@ impl MerkleTree {
     }
 
     /// Duplicates last element if level of tree is odd, so that it becomes even. Auxiliary function for build method.
-    fn duplicate_last_if_odd(elements: &mut Vec<Hash>) {
+    fn duplicate_last_if_odd(elements: &mut Vec<String>) {
         if elements.len() % 2 != 0 {
             let last = elements
                 .last()
@@ -163,7 +163,7 @@ impl MerkleTree {
     }
 
     /// Tries to find the index of a given hash. Returns error if not found.
-    fn find_hash_index(&self, hash: Hash) -> Result<usize, MerkleError> {
+    fn find_hash_index(&self, hash: String) -> Result<usize, MerkleError> {
         self.tree.get(0)
             .ok_or(MerkleError::EmptyTree)?
             .iter()
