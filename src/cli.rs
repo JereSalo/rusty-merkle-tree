@@ -128,8 +128,9 @@ impl Cli {
                 }
             }
             Commands::Build { elements, hashed } => {
+                let elements_str: Vec<&str> = elements.iter().map(String::as_str).collect();
                 let custom_message = if !hashed { "hashes of " } else { "" };
-                self.mktree = MerkleTree::build(elements.clone(), hashed)?;
+                self.mktree = MerkleTree::build(&elements_str, hashed)?;
                 println!("Tree built with {}elements {:?}", custom_message, elements);
             }
         }

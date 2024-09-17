@@ -24,18 +24,18 @@ impl MerkleTree {
     }
 
     /// Builds merkle tree from elements list, hashing them first if specified. Hashing can be skipped if user wants to build a tree with hashes directly instead of elements.
-    pub fn build(elements: Vec<String>, hashed: bool) -> Result<Self, MerkleError> {
-        if has_duplicates(&elements) {
+    pub fn build(elements: &[&str], hashed: bool) -> Result<Self, MerkleError> {
+        if has_duplicates(elements) {
             return Err(MerkleError::DuplicateElement);
         }
 
         let mut merkle_tree = MerkleTree { tree: vec![] };
 
         // Hash elements if not hashed
-        let mut elements_to_push = if !hashed {
+        let mut elements_to_push: Vec<String> = if !hashed {
             elements.iter().map(|e| Self::hash(e)).collect()
         } else {
-            elements
+            elements.iter().map(|e| e.to_string()).collect()
         };
 
         // Push every level to the tree (cloning last element if necessary) until root is reached.
@@ -109,7 +109,10 @@ impl MerkleTree {
         };
 
         self.tree[0].push(hash);
-        *self = MerkleTree::build(self.tree[0].clone(), true)?; // Rebuilds the tree from scratch, not efficient but Make it Work
+        
+        let slice_of_strs: Vec<&str> = self.tree[0].iter().map(String::as_str).collect();
+        *self = MerkleTree::build(&slice_of_strs, true)?; // Rebuilds tree from sliceit Work
+
         Ok(())
     }
 
@@ -182,26 +185,19 @@ impl MerkleTree {
 }
 
 /// Checks for duplicate strings in a list
-fn has_duplicates(vec: &[String]) -> bool {
+fn has_duplicates(vec: &[&str]) -> bool {
     let mut seen = HashSet::new();
     vec.iter().any(|item| !seen.insert(item))
 }
 
 #[cfg(test)]
 mod tests {
-    use std::f32::consts::E;
-
     use super::*;
 
     fn build_basic_tree() -> MerkleTree {
-        let elements = vec![
-            "a".to_string(),
-            "b".to_string(),
-            "c".to_string(),
-            "d".to_string(),
-        ];
+        let elements = ["a","b","c","d"];
 
-        MerkleTree::build(elements, false).unwrap()
+        MerkleTree::build(&elements, false).unwrap()
     }
 
     #[test]
