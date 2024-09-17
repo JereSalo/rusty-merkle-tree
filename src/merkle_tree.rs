@@ -250,14 +250,16 @@ mod tests {
         assert_eq!(merkle_root, expected_root);
     }
 
-    // #[test]
-    // fn build_large_tree() {
-    //     // Tree is going to have 4 levels, it's elements will be a b c d e f g h.
-    //      // Expected root is 5d2a8967adb92f46e3266c0cddef844418e95fc6dbe733029e8a7da6145a5afe
-    //      // If the tree built has that root then it means that all levels of it are well built. 
-    //     let elements = ["a","b","c","d","e","f","g","h"];
-    //     let mktree = MerkleTree::build(elements, hashed)
-    // }
+    #[test]
+    fn build_large_tree() {
+        // Tree is going to have 4 levels, it's elements will be a b c d e f g h.
+        // Expected root is 5d2a8967adb92f46e3266c0cddef844418e95fc6dbe733029e8a7da6145a5afe
+        // If the tree built has that root then it means that all levels of it are well built. 
+        let elements = ["a", "b", "c", "d", "e", "f", "g", "h"];
+        let mktree = MerkleTree::build(&elements, false).unwrap();
+
+        assert_eq!(mktree.get_root().unwrap(), "5d2a8967adb92f46e3266c0cddef844418e95fc6dbe733029e8a7da6145a5afe");
+    }
 
     #[test]
     fn make_proof() {
