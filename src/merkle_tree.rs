@@ -156,7 +156,7 @@ impl MerkleTree {
         if elements.len() % 2 != 0 {
             let last = elements
                 .last()
-                .unwrap() // I use unwrap here because by design this won't be executed on an empty list.
+                .expect("The list is unexpectedly empty, but it should contain at least one element by design.")
                 .clone();
             elements.push(last);
         }
