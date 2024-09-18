@@ -40,7 +40,9 @@ impl MerkleTree {
 
         // Push every level to the tree (cloning last element if necessary) until root is reached.
         while elements_to_push.len() > 1 {
-            Self::duplicate_last_if_odd(&mut elements_to_push);
+            if let (true, Some(last_element)) = (elements_to_push.len() % 2 != 0, elements_to_push.last()) {
+                elements_to_push.push(last_element.clone())
+            }
 
             merkle_tree.tree.push(elements_to_push.clone());
 
@@ -152,17 +154,6 @@ impl MerkleTree {
             .first()
             .ok_or(MerkleError::EmptyTree)?;
         Ok(root)
-    }
-
-    /// Duplicates last element if level of tree is odd, so that it becomes even. Auxiliary function for build method.
-    fn duplicate_last_if_odd(elements: &mut Vec<String>) {
-        if elements.len() % 2 != 0 {
-            let last = elements
-                .last()
-                .expect("The list is unexpectedly empty, but it should contain at least one element by design.")
-                .clone();
-            elements.push(last);
-        }
     }
 
     /// Tries to find the index of a given hash. Returns error if not found.
