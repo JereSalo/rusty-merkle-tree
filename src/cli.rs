@@ -124,12 +124,13 @@ impl Cli {
                 let proof = self.mktree.gen_proof(hash.clone())?;
                 println!("Generated proof:");
                 for element in proof {
-                    println!("  {} - {}", element.hash, element.side);
+                    println!("  {};{}", element.hash, element.side);
                 }
             }
             Commands::Build { elements, hashed } => {
+                let elements_str: Vec<&str> = elements.iter().map(String::as_str).collect();
                 let custom_message = if !hashed { "hashes of " } else { "" };
-                self.mktree = MerkleTree::build(elements.clone(), hashed)?;
+                self.mktree = MerkleTree::build(&elements_str, hashed)?;
                 println!("Tree built with {}elements {:?}", custom_message, elements);
             }
         }
