@@ -158,7 +158,7 @@ impl MerkleTree {
 
     /// Tries to find the index of a given hash. Returns error if not found.
     fn find_hash_index(&self, hash: String) -> Result<usize, MerkleError> {
-        self.tree.get(0)
+        self.tree.first()
             .ok_or(MerkleError::EmptyTree)?
             .iter()
             .position(|element| *element == hash)
