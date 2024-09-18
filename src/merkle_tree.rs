@@ -40,7 +40,9 @@ impl MerkleTree {
 
         // Push every level to the tree (cloning last element if necessary) until root is reached.
         while elements_to_push.len() > 1 {
-            if let (true, Some(last_element)) = (elements_to_push.len() % 2 != 0, elements_to_push.last()) {
+            if let (true, Some(last_element)) =
+                (elements_to_push.len() % 2 != 0, elements_to_push.last())
+            {
                 elements_to_push.push(last_element.clone())
             }
 
@@ -111,7 +113,7 @@ impl MerkleTree {
         };
 
         self.tree[0].push(hash);
-        
+
         let slice_of_strs: Vec<&str> = self.tree[0].iter().map(String::as_str).collect();
         *self = MerkleTree::build(&slice_of_strs, true)?; // Rebuilds tree from sliceit Work
 
@@ -158,7 +160,8 @@ impl MerkleTree {
 
     /// Tries to find the index of a given hash. Returns error if not found.
     fn find_hash_index(&self, hash: String) -> Result<usize, MerkleError> {
-        self.tree.first()
+        self.tree
+            .first()
             .ok_or(MerkleError::EmptyTree)?
             .iter()
             .position(|element| *element == hash)
@@ -186,7 +189,7 @@ mod tests {
     use super::*;
 
     fn build_basic_tree() -> MerkleTree {
-        let elements = ["a","b","c","d"];
+        let elements = ["a", "b", "c", "d"];
 
         MerkleTree::build(&elements, false).unwrap()
     }
@@ -245,11 +248,14 @@ mod tests {
     fn build_large_tree() {
         // Tree is going to have 4 levels, it's elements will be a b c d e f g h.
         // Expected root is 5d2a8967adb92f46e3266c0cddef844418e95fc6dbe733029e8a7da6145a5afe
-        // If the tree built has that root then it means that all levels of it are well built. 
+        // If the tree built has that root then it means that all levels of it are well built.
         let elements = ["a", "b", "c", "d", "e", "f", "g", "h"];
         let mktree = MerkleTree::build(&elements, false).unwrap();
 
-        assert_eq!(mktree.get_root().unwrap(), "5d2a8967adb92f46e3266c0cddef844418e95fc6dbe733029e8a7da6145a5afe");
+        assert_eq!(
+            mktree.get_root().unwrap(),
+            "5d2a8967adb92f46e3266c0cddef844418e95fc6dbe733029e8a7da6145a5afe"
+        );
     }
 
     #[test]
