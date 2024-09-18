@@ -124,7 +124,7 @@ impl Cli {
                 let proof = self.mktree.gen_proof(hash.clone())?;
                 println!("Generated proof:");
                 for element in proof {
-                    println!("  {} - {}", element.hash, element.side);
+                    println!("  {};{}", element.hash, element.side);
                 }
             }
             Commands::Build { elements, hashed } => {
